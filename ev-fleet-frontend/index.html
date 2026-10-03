@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Fleet Management Tester</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 EV Fleet Server Tester</h1>
+        <p class="subtitle">Connected to Fleet Server at <code>http://localhost:5001</code></p>
+        
+        <div class="card">
+            <h3>Get All Vehicles</h3>
+            <button onclick="getVehicles()">Fetch Vehicles</button>
+        </div>
+
+        <div class="card">
+            <h3>Add New Vehicle</h3>
+            <input type="text" id="vId" placeholder="Vehicle ID (e.g. EV-5001)"><br>
+            <input type="text" id="vType" placeholder="Vehicle Type (e.g. 2-wheeler)"><br>
+            <input type="text" id="vCompany" placeholder="Company Name"><br>
+            <input type="text" id="vModel" placeholder="Model Name"><br>
+            <input type="text" id="vPlate" placeholder="Number Plate"><br>
+            <button onclick="addVehicle()">Create Vehicle</button>
+        </div>
+
+        <div class="card">
+            <h3>API Response Console</h3>
+            <pre id="output">Ready to test...</pre>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

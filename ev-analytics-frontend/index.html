@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Financial Analytics Tester</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📊 EV Financial Analytics Tester</h1>
+        <p class="subtitle">Connected to Analytics Server at <code>http://localhost:5003</code></p>
+        
+        <div class="card">
+            <h3>Get All Analytics Records</h3>
+            <button onclick="getAnalytics()">Fetch Analytics</button>
+        </div>
+
+        <div class="card">
+            <h3>API Response Console</h3>
+            <pre id="output">Ready to test...</pre>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
