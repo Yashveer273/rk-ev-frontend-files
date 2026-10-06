@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Vehicle Cluster Dashboard</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f7fa;
+      color: #172033;
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    .dashboard-layout {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 255px;
+      min-height: 100vh;
+      background: #111827;
+      color: #fff;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 1000;
+      padding: 24px 16px;
+    }
+
+    .brand {
+      padding: 4px 12px 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 22px;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      color: #9ca3af;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .nav-title {
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 0 12px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 11px 12px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .sidebar-link:hover,
+    .sidebar-link.active {
+      color: #fff;
+      background: #1f2937;
+    }
+
+    .sidebar-link span {
+      font-size: 13px;
+    }
+
+    .main-content {
+      margin-left: 255px;
+      width: calc(100% - 255px);
+      min-height: 100vh;
+    }
+
+    .topbar {
+      height: 72px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 900;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .role-badge {
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 20px;
+      padding: 7px 13px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .cluster-badge {
+      background: #f3f4f6;
+      color: #374151;
+      border-radius: 20px;
+      padding: 7px 13px;
+      font-size: 12px;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .content {
+      padding: 30px 32px 50px;
+    }
+
+    .welcome {
+      margin-bottom: 25px;
+    }
+
+    .welcome h2 {
+      margin: 0;
+      font-size: 25px;
+      font-weight: 700;
+    }
+
+    .welcome p {
+      margin: 7px 0 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 16px;
+    }
+
+    .operation-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 22px;
+      height: 100%;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    }
+
+    .operation-card h5 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .operation-description {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .form-control,
+    .form-select {
+      min-height: 42px;
+      border-color: #dbe1e8;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .btn {
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      min-height: 40px;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      border-color: #4f46e5;
+    }
+
+    .btn-primary:hover {
+      background: #4338ca;
+      border-color: #4338ca;
+    }
+
+    .info-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      height: 100%;
+    }
+
+    .info-label {
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      color: #111827;
+      font-size: 17px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .operator-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .operator-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 850px;
+    }
+
+    .operator-table th {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .operator-table td {
+      padding: 13px 12px;
+      border-bottom: 1px solid #edf0f3;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .status-box {
+      margin-top: 15px;
+    }
+
+    .configuration-error {
+      display: none;
+      margin-bottom: 20px;
+    }
+
+    .small-note {
+      color: #6b7280;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 992px) {
+      .sidebar {
+        width: 220px;
+      }
+
+      .main-content {
+        margin-left: 220px;
+        width: calc(100% - 220px);
+      }
+
+      .content {
+        padding: 25px 20px;
+      }
+
+      .topbar {
+        padding: 0 20px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: relative;
+        width: 100%;
+        min-height: auto;
+      }
+
+      .dashboard-layout {
+        display: block;
+      }
+
+      .main-content {
+        margin-left: 0;
+        width: 100%;
+      }
+
+      .topbar {
+        position: relative;
+        height: auto;
+        padding: 15px 18px;
+        gap: 10px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .topbar-right {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .content {
+        padding: 20px 15px 35px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+      <div class="brand">
+        <div class="brand-title">
+          Vehicle Cluster
+        </div>
+
+        <div class="brand-subtitle">
+          Transport Management
+        </div>
+      </div>
+
+      <div class="nav-title">
+        Dashboard
+      </div>
+
+      <a
+        href="dashboard.html"
+        class="sidebar-link active"
+      >
+        <span>Dashboard</span>
+      </a>
+
+      <div
+        data-dashboard-role="super-admin"
+      >
+
+        <div class="nav-title mt-4">
+          Super Admin
+        </div>
+
+        <a
+          href="#createClusterSection"
+          class="sidebar-link"
+        >
+          <span>Create Cluster</span>
+        </a>
+
+        <a
+          href="#clusterManagementSection"
+          class="sidebar-link"
+        >
+          <span>Cluster Management</span>
+        </a>
+
+        <a
+          href="#ownerDetailsSection"
+          class="sidebar-link"
+        >
+          <span>Owner Details</span>
+        </a>
+
+        <a
+          href="#kycVerificationSection"
+          class="sidebar-link"
+        >
+          <span>KYC Verification</span>
+        </a>
+
+      </div>
+
+      <div
+        data-dashboard-role="cluster-owner"
+      >
+
+        <div class="nav-title mt-4">
+          Cluster Owner
+        </div>
+
+        <a
+          href="#ownerDetailsSection"
+          class="sidebar-link"
+        >
+          <span>Owner Details</span>
+        </a>
+
+        <a
+          href="#kycSection"
+          class="sidebar-link"
+        >
+          <span>KYC</span>
+        </a>
+
+        <a
+          href="#operatorSection"
+          class="sidebar-link"
+        >
+          <span>Vehicle Operators</span>
+        </a>
+
+      </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+
+        <div>
+          <h1 class="page-title">
+            Dashboard
+          </h1>
+        </div>
+
+        <div class="topbar-right">
+
+          <div class="role-badge">
+            Role:
+            <span data-user-role>
+              -
+            </span>
+          </div>
+
+          <div class="cluster-badge">
+            Cluster:
+            <span data-cluster-id>
+              Not configured
+            </span>
+          </div>
+
+        </div>
+
+      </header>
+
+
+      <!-- CONTENT -->
+      <div class="content">
+
+        <div
+          id="configurationError"
+          class="alert alert-danger configuration-error"
+        ></div>
+
+
+        <!-- WELCOME -->
+        <div class="welcome">
+
+          <h2>
+            Vehicle Cluster Management
+          </h2>
+
+          <p>
+            Manage vehicle clusters, owners,
+            KYC and vehicle operators from one place.
+          </p>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- SUPER ADMIN -->
+        <!-- ================================================= -->
+
+        <section
+          id="superAdminSection"
+          data-dashboard-role="super-admin"
+        >
+
+          <div class="section-title">
+            Super Admin Operations
+          </div>
+
+
+          <!-- CREATE CLUSTER -->
+          <div
+            class="operation-card mb-4"
+            id="createClusterSection"
+          >
+
+            <h5>
+              Create Vehicle Cluster
+            </h5>
+
+            <div class="operation-description">
+              Create a new vehicle cluster.
+              MongoDB cluster ID and owner ID will be
+              captured from the backend response.
+            </div>
+
+            <form
+              id="createClusterForm"
+            >
+
+              <div class="row g-3">
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Cluster Owner Name
+                  </label>
+
+                  <input
+                    type="text"
+                    name="vehicleClusterOwnerName"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Owner Email
+                  </label>
+
+                  <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    PAN
+                  </label>
+
+                  <input
+                    type="text"
+                    name="pan"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Vehicle Capacity
+                  </label>
+
+                  <input
+                    type="number"
+                    name="vehicleCapacity"
+                    min="0"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Owner Image URL
+                  </label>
+
+                  <input
+                    type="text"
+                    name="image"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Latitude
+                  </label>
+
+                  <input
+                    type="number"
+                    step="any"
+                    name="lat"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Longitude
+                  </label>
+
+                  <input
+                    type="number"
+                    step="any"
+                    name="long"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    ZIP Code
+                  </label>
+
+                  <input
+                    type="text"
+                    name="zipCode"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    State
+                  </label>
+
+                  <input
+                    type="text"
+                    name="state"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    City
+                  </label>
+
+                  <input
+                    type="text"
+                    name="city"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Street Address
+                  </label>
+
+                  <input
+                    type="text"
+                    name="streetAddress"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="createClusterMessage"
+                class="status-box"
+              ></div>
+
+
+              <button
+                type="submit"
+                class="btn btn-primary mt-3"
+              >
+                Create Cluster
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <!-- CLUSTER MANAGEMENT -->
+          <div
+            class="operation-card mb-4"
+            id="clusterManagementSection"
+          >
+
+            <h5>
+              Cluster Management
+            </h5>
+
+            <div class="operation-description">
+              Update capacity and location using the
+              vehicleClusterOwnerId.
+            </div>
+
+
+            <div class="row g-4">
+
+              <!-- CAPACITY -->
+              <div class="col-lg-6">
+
+                <form
+                  id="capacityForm"
+                >
+
+                  <h6 class="fw-bold mb-3">
+                    Update Capacity
+                  </h6>
+
+
+                  <div class="mb-3">
+
+                    <label class="form-label">
+                      Vehicle Cluster Owner ID
+                    </label>
+
+                    <input
+                      type="text"
+                      name="vehicleClusterOwnerId"
+                      id="capacityOwnerId"
+                      class="form-control"
+                      placeholder="VCO-XXXX"
+                      required
+                    />
+
+                  </div>
+
+
+                  <div class="mb-3">
+
+                    <label class="form-label">
+                      Vehicle Capacity
+                    </label>
+
+                    <input
+                      type="number"
+                      name="vehicleCapacity"
+                      min="0"
+                      class="form-control"
+                      required
+                    />
+
+                  </div>
+
+
+                  <div
+                    id="capacityMessage"
+                    class="status-box"
+                  ></div>
+
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                  >
+                    Update Capacity
+                  </button>
+
+                </form>
+
+              </div>
+
+
+              <!-- LOCATION -->
+              <div class="col-lg-6">
+
+                <form
+                  id="locationForm"
+                >
+
+                  <h6 class="fw-bold mb-3">
+                    Update Location
+                  </h6>
+
+
+                  <div class="mb-3">
+
+                    <label class="form-label">
+                      Vehicle Cluster Owner ID
+                    </label>
+
+                    <input
+                      type="text"
+                      name="vehicleClusterOwnerId"
+                      id="locationOwnerId"
+                      class="form-control"
+                      placeholder="VCO-XXXX"
+                      required
+                    />
+
+                  </div>
+
+
+                  <div class="row g-2">
+
+                    <div class="col-6">
+
+                      <label class="form-label">
+                        Latitude
+                      </label>
+
+                      <input
+                        type="number"
+                        step="any"
+                        name="lat"
+                        class="form-control"
+                        required
+                      />
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                      <label class="form-label">
+                        Longitude
+                      </label>
+
+                      <input
+                        type="number"
+                        step="any"
+                        name="long"
+                        class="form-control"
+                        required
+                      />
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                      <label class="form-label">
+                        ZIP Code
+                      </label>
+
+                      <input
+                        type="text"
+                        name="zipCode"
+                        class="form-control"
+                        required
+                      />
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                      <label class="form-label">
+                        State
+                      </label>
+
+                      <input
+                        type="text"
+                        name="state"
+                        class="form-control"
+                        required
+                      />
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                      <label class="form-label">
+                        City
+                      </label>
+
+                      <input
+                        type="text"
+                        name="city"
+                        class="form-control"
+                        required
+                      />
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                      <label class="form-label">
+                        Street Address
+                      </label>
+
+                      <input
+                        type="text"
+                        name="streetAddress"
+                        class="form-control"
+                        required
+                      />
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    id="locationMessage"
+                    class="status-box"
+                  ></div>
+
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary mt-3"
+                  >
+                    Update Location
+                  </button>
+
+                </form>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- OWNER DETAILS -->
+          <div
+            class="operation-card mb-4"
+            id="ownerDetailsSection"
+          >
+
+            <h5>
+              Owner Details
+            </h5>
+
+            <div class="operation-description">
+              Update cluster owner information.
+            </div>
+
+
+            <form
+              id="superAdminOwnerForm"
+            >
+
+              <div class="row g-3">
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Vehicle Cluster Owner ID
+                  </label>
+
+                  <input
+                    type="text"
+                    name="vehicleClusterOwnerId"
+                    id="superAdminOwnerId"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Owner Name
+                  </label>
+
+                  <input
+                    type="text"
+                    name="ownerName"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    PAN
+                  </label>
+
+                  <input
+                    type="text"
+                    name="pan"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Email
+                  </label>
+
+                  <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Image URL
+                  </label>
+
+                  <input
+                    type="text"
+                    name="image"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Owner Status
+                  </label>
+
+                  <select
+                    name="status"
+                    class="form-select"
+                  >
+                    <option value="">
+                      Keep Current
+                    </option>
+
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                    <option value="Verified">
+                      Verified
+                    </option>
+
+                    <option value="Rejected">
+                      Rejected
+                    </option>
+                  </select>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="superAdminOwnerMessage"
+                class="status-box"
+              ></div>
+
+
+              <button
+                type="submit"
+                class="btn btn-primary mt-3"
+              >
+                Update Owner Details
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <!-- KYC VERIFICATION -->
+          <div
+            class="operation-card"
+            id="kycVerificationSection"
+          >
+
+            <h5>
+              KYC Verification
+            </h5>
+
+            <div class="operation-description">
+              Verify or reject the KYC of the configured
+              MongoDB cluster.
+            </div>
+
+
+            <div class="mb-3">
+
+              <label class="form-label">
+                Active MongoDB Cluster ID
+              </label>
+
+              <input
+                type="text"
+                id="superAdminClusterId"
+                class="form-control"
+                readonly
+              />
+
+            </div>
+
+
+            <div class="d-flex gap-2 flex-wrap">
+
+              <button
+                type="button"
+                id="verifyKycButton"
+                class="btn btn-success"
+              >
+                Verify KYC
+              </button>
+
+              <button
+                type="button"
+                id="rejectKycButton"
+                class="btn btn-outline-danger"
+              >
+                Reject KYC
+              </button>
+
+            </div>
+
+
+            <div
+              id="kycVerificationMessage"
+              class="status-box"
+            ></div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================================= -->
+        <!-- CLUSTER OWNER -->
+        <!-- ================================================= -->
+
+        <section
+          id="clusterOwnerSection"
+          data-dashboard-role="cluster-owner"
+        >
+
+          <div class="section-title">
+            Cluster Owner Operations
+          </div>
+
+
+          <!-- CLUSTER INFORMATION -->
+          <div class="row g-3 mb-4">
+
+            <div class="col-md-4">
+
+              <div class="info-card">
+
+                <div class="info-label">
+                  MongoDB Cluster ID
+                </div>
+
+                <div
+                  class="info-value"
+                  data-cluster-id
+                >
+                  -
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+              <div class="info-card">
+
+                <div class="info-label">
+                  Owner ID
+                </div>
+
+                <div
+                  class="info-value"
+                  id="ownerIdDisplay"
+                >
+                  -
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+              <div class="info-card">
+
+                <div class="info-label">
+                  Current Role
+                </div>
+
+                <div
+                  class="info-value"
+                  data-user-role
+                >
+                  cluster-owner
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- OWNER DETAILS -->
+          <div
+            class="operation-card mb-4"
+            id="ownerDetailsSectionOwner"
+          >
+
+            <h5>
+              Owner Details
+            </h5>
+
+            <div class="operation-description">
+              Update your cluster owner details.
+            </div>
+
+
+            <form
+              id="clusterOwnerOwnerForm"
+            >
+
+              <div class="row g-3">
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Vehicle Cluster Owner ID
+                  </label>
+
+                  <input
+                    type="text"
+                    name="vehicleClusterOwnerId"
+                    id="clusterOwnerOwnerId"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Owner Name
+                  </label>
+
+                  <input
+                    type="text"
+                    name="ownerName"
+                    class="form-control"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    PAN
+                  </label>
+
+                  <input
+                    type="text"
+                    name="pan"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Email
+                  </label>
+
+                  <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Image URL
+                  </label>
+
+                  <input
+                    type="text"
+                    name="image"
+                    class="form-control"
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="clusterOwnerOwnerMessage"
+                class="status-box"
+              ></div>
+
+
+              <button
+                type="submit"
+                class="btn btn-primary mt-3"
+              >
+                Update Owner Details
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <!-- KYC -->
+          <div
+            class="operation-card mb-4"
+            id="kycSection"
+          >
+
+            <h5>
+              Submit KYC
+            </h5>
+
+            <div class="operation-description">
+              Submit Aadhaar details for KYC verification.
+            </div>
+
+
+            <form
+              id="kycForm"
+            >
+
+              <div class="mb-3">
+
+                <label class="form-label">
+                  Aadhaar
+                </label>
+
+                <input
+                  type="text"
+                  name="aadhaar"
+                  class="form-control"
+                  maxlength="12"
+                  required
+                />
+
+              </div>
+
+
+              <div
+                id="kycMessage"
+                class="status-box"
+              ></div>
+
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+              >
+                Submit KYC
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <!-- ADD OPERATOR -->
+          <div
+            class="operation-card mb-4"
+            id="operatorSection"
+          >
+
+            <h5>
+              Add Vehicle Operator
+            </h5>
+
+            <div class="operation-description">
+              Add a vehicle/operator record to the active cluster.
+            </div>
+
+
+            <form
+              id="operatorForm"
+            >
+
+              <div class="row g-3">
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Vehicle ID
+                  </label>
+
+                  <input
+                    type="text"
+                    name="vehicleId"
+                    class="form-control"
+                    placeholder="Leave empty for auto generation"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Investor ID
+                  </label>
+
+                  <input
+                    type="text"
+                    name="investorId"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Operator ID
+                  </label>
+
+                  <input
+                    type="text"
+                    name="operatorId"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Vehicle Start Date
+                  </label>
+
+                  <input
+                    type="date"
+                    name="startDate"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Vehicle End Date
+                  </label>
+
+                  <input
+                    type="date"
+                    name="endDate"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-12">
+
+                  <hr />
+
+                  <h6 class="fw-bold">
+                    Service Details
+                  </h6>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Service Start Date
+                  </label>
+
+                  <input
+                    type="date"
+                    name="serviceStartDate"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Service End Date
+                  </label>
+
+                  <input
+                    type="date"
+                    name="serviceEndDate"
+                    class="form-control"
+                  />
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                  <label class="form-label">
+                    Service Status
+                  </label>
+
+                  <select
+                    name="serviceStatus"
+                    class="form-select"
+                  >
+
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                    <option value="Active">
+                      Active
+                    </option>
+
+                    <option value="Completed">
+                      Completed
+                    </option>
+
+                    <option value="Expired">
+                      Expired
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Operator Payment Amount
+                  </label>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="operatorPaymentAmount"
+                    class="form-control"
+                    value="0"
+                  />
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                  <label class="form-label">
+                    Investor Payment Amount
+                  </label>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="investorPaymentAmount"
+                    class="form-control"
+                    value="0"
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="operatorMessage"
+                class="status-box"
+              ></div>
+
+
+              <button
+                type="submit"
+                class="btn btn-primary mt-3"
+              >
+                Add Vehicle Operator
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <!-- OPERATOR LIST -->
+          <div class="operation-card">
+
+            <div
+              class="d-flex justify-content-between align-items-center mb-3"
+            >
+
+              <div>
+
+                <h5 class="mb-1">
+                  Vehicle Operators
+                </h5>
+
+                <div class="operation-description mb-0">
+                  Operators currently assigned to this cluster.
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                id="refreshOperatorsButton"
+                class="btn btn-outline-secondary"
+              >
+                Refresh
+              </button>
+
+            </div>
+
+
+            <div class="operator-table-wrapper">
+
+              <table class="operator-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Vehicle ID
+                    </th>
+
+                    <th>
+                      Investor ID
+                    </th>
+
+                    <th>
+                      Operator ID
+                    </th>
+
+                    <th>
+                      Start Date
+                    </th>
+
+                    <th>
+                      End Date
+                    </th>
+
+                    <th>
+                      Service
+                    </th>
+
+                    <th>
+                      Operator Payment
+                    </th>
+
+                    <th>
+                      Action
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody id="operatorRows">
+
+                  <tr>
+
+                    <td
+                      colspan="8"
+                      class="text-center py-4"
+                    >
+                      Loading operators...
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- JAVASCRIPT -->
+  <!-- ===================================================== -->
+
+  <script src="../config/app-config.js"></script>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/dashboard.js"></script>
+  <script src="../js/super-admin.js"></script>
+  <script src="../js/cluster-owner.js"></script>
+  <script src="../js/operator-list.js"></script>
+
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      const $ = (id) =>
+        document.getElementById(id);
+
+
+      /*
+       * =====================================================
+       * CONFIG DISPLAY
+       * =====================================================
+       */
+
+      const config =
+        ClusterConfig.getConfig();
+
+      const ownerId =
+        config.VEHICLE_CLUSTER_OWNER_ID || "";
+
+      if ($("ownerIdDisplay")) {
+        $("ownerIdDisplay").textContent =
+          ownerId || "Not configured";
+      }
+
+      if ($("superAdminClusterId")) {
+        $("superAdminClusterId").value =
+          config.ACTIVE_CLUSTER_ID || "";
+      }
+
+      if ($("capacityOwnerId") && ownerId) {
+        $("capacityOwnerId").value =
+          ownerId;
+      }
+
+      if ($("locationOwnerId") && ownerId) {
+        $("locationOwnerId").value =
+          ownerId;
+      }
+
+      if ($("superAdminOwnerId") && ownerId) {
+        $("superAdminOwnerId").value =
+          ownerId;
+      }
+
+      if ($("clusterOwnerOwnerId") && ownerId) {
+        $("clusterOwnerOwnerId").value =
+          ownerId;
+      }
+
+
+      /*
+       * =====================================================
+       * SUPER ADMIN - CREATE CLUSTER
+       * =====================================================
+       */
+
+      const createForm =
+        $("createClusterForm");
+
+      if (createForm) {
+
+        createForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("createClusterMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              const result =
+                await SuperAdmin.handleCreateForm(
+                  createForm
+                );
+
+              const cluster =
+                result.cluster;
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  Cluster created successfully.
+                  <br>
+                  <strong>MongoDB ID:</strong>
+                  ${ClusterUtils.esc(
+                    cluster._id
+                  )}
+                  <br>
+                  <strong>Owner ID:</strong>
+                  ${ClusterUtils.esc(
+                    cluster.vehicleClusterOwnerId
+                  )}
+                </div>
+              `;
+
+
+              /*
+               * Update visible values
+               */
+
+              const newClusterId =
+                cluster._id || "";
+
+              const newOwnerId =
+                cluster.vehicleClusterOwnerId ||
+                "";
+
+
+              if ($("superAdminClusterId")) {
+                $("superAdminClusterId").value =
+                  newClusterId;
+              }
+
+              if ($("capacityOwnerId")) {
+                $("capacityOwnerId").value =
+                  newOwnerId;
+              }
+
+              if ($("locationOwnerId")) {
+                $("locationOwnerId").value =
+                  newOwnerId;
+              }
+
+              if ($("superAdminOwnerId")) {
+                $("superAdminOwnerId").value =
+                  newOwnerId;
+              }
+
+              if ($("clusterOwnerOwnerId")) {
+                $("clusterOwnerOwnerId").value =
+                  newOwnerId;
+              }
+
+              if ($("ownerIdDisplay")) {
+                $("ownerIdDisplay").textContent =
+                  newOwnerId ||
+                  "Not configured";
+              }
+
+              document
+                .querySelectorAll(
+                  "[data-cluster-id]"
+                )
+                .forEach(
+                  (element) => {
+                    element.textContent =
+                      newClusterId ||
+                      "Not configured";
+                  }
+                );
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * SUPER ADMIN - CAPACITY
+       * =====================================================
+       */
+
+      const capacityForm =
+        $("capacityForm");
+
+      if (capacityForm) {
+
+        capacityForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("capacityMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              await SuperAdmin.handleCapacityForm(
+                capacityForm
+              );
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  Vehicle capacity updated successfully.
+                </div>
+              `;
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * SUPER ADMIN - LOCATION
+       * =====================================================
+       */
+
+      const locationForm =
+        $("locationForm");
+
+      if (locationForm) {
+
+        locationForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("locationMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              await SuperAdmin.handleLocationForm(
+                locationForm
+              );
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  Cluster location updated successfully.
+                </div>
+              `;
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * SUPER ADMIN - OWNER DETAILS
+       * =====================================================
+       */
+
+      const superAdminOwnerForm =
+        $("superAdminOwnerForm");
+
+      if (superAdminOwnerForm) {
+
+        superAdminOwnerForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("superAdminOwnerMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              await SuperAdmin.handleOwnerDetailsForm(
+                superAdminOwnerForm
+              );
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  Owner details updated successfully.
+                </div>
+              `;
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * SUPER ADMIN - KYC VERIFY
+       * =====================================================
+       */
+
+      async function updateKycStatus(
+        status
+      ) {
+
+        const message =
+          $("kycVerificationMessage");
+
+        message.innerHTML = "";
+
+        try {
+
+          await SuperAdmin.verifyKyc(
+            status
+          );
+
+          message.innerHTML = `
+            <div class="alert alert-success">
+              KYC status updated to
+              <strong>${ClusterUtils.esc(
+                status
+              )}</strong>.
+            </div>
+          `;
+
+        } catch (error) {
+
+          message.innerHTML = `
+            <div class="alert alert-danger">
+              ${ClusterUtils.esc(
+                error.message
+              )}
+            </div>
+          `;
+
+        }
+
+      }
+
+
+      if ($("verifyKycButton")) {
+
+        $("verifyKycButton")
+          .addEventListener(
+            "click",
+            () =>
+              updateKycStatus(
+                "Verified"
+              )
+          );
+
+      }
+
+
+      if ($("rejectKycButton")) {
+
+        $("rejectKycButton")
+          .addEventListener(
+            "click",
+            () =>
+              updateKycStatus(
+                "Rejected"
+              )
+          );
+
+      }
+
+
+      /*
+       * =====================================================
+       * CLUSTER OWNER - OWNER DETAILS
+       * =====================================================
+       */
+
+      const clusterOwnerOwnerForm =
+        $("clusterOwnerOwnerForm");
+
+      if (clusterOwnerOwnerForm) {
+
+        clusterOwnerOwnerForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("clusterOwnerOwnerMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              const data =
+                Object.fromEntries(
+                  new FormData(
+                    clusterOwnerOwnerForm
+                  ).entries()
+                );
+
+              await ClusterAPI.updateOwnerDetails(
+                data.vehicleClusterOwnerId,
+                {
+                  ownerName:
+                    data.ownerName,
+
+                  pan:
+                    data.pan,
+
+                  email:
+                    data.email,
+
+                  image:
+                    data.image
+                }
+              );
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  Owner details updated successfully.
+                </div>
+              `;
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * CLUSTER OWNER - KYC
+       * =====================================================
+       */
+
+      const kycForm =
+        $("kycForm");
+
+      if (kycForm) {
+
+        kycForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("kycMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              await ClusterOwner.handleKycForm(
+                kycForm
+              );
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  KYC submitted successfully.
+                  It is now pending verification.
+                </div>
+              `;
+
+              kycForm.reset();
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * CLUSTER OWNER - ADD OPERATOR
+       * =====================================================
+       */
+
+      const operatorForm =
+        $("operatorForm");
+
+      if (operatorForm) {
+
+        operatorForm.addEventListener(
+          "submit",
+          async function (event) {
+
+            event.preventDefault();
+
+            const message =
+              $("operatorMessage");
+
+            message.innerHTML = "";
+
+            try {
+
+              await ClusterOwner.handleOperatorForm(
+                operatorForm
+              );
+
+              message.innerHTML = `
+                <div class="alert alert-success">
+                  Vehicle operator added successfully.
+                </div>
+              `;
+
+              operatorForm.reset();
+
+              await OperatorList.loadOperators();
+
+            } catch (error) {
+
+              message.innerHTML = `
+                <div class="alert alert-danger">
+                  ${ClusterUtils.esc(
+                    error.message
+                  )}
+                </div>
+              `;
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+       * =====================================================
+       * CLUSTER OWNER - LOAD OPERATORS
+       * =====================================================
+       */
+
+      if (
+        config.USER_ROLE ===
+        "cluster-owner"
+      ) {
+
+        OperatorList
+          .loadOperators()
+          .catch(() => {});
+
+      }
+
+
+      /*
+       * =====================================================
+       * REFRESH OPERATORS
+       * =====================================================
+       */
+
+      if ($("refreshOperatorsButton")) {
+
+        $("refreshOperatorsButton")
+          .addEventListener(
+            "click",
+            function () {
+
+              OperatorList
+                .loadOperators()
+                .catch(() => {});
+
+            }
+          );
+
+      }
+
+    });
+  </script>
+
+</body>
+</html>
