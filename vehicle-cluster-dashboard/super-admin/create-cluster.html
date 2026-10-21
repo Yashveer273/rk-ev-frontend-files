@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Cluster - Super Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  
+  <!-- Leaflet Free Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <style>
+    #pickerMap {
+      height: 380px;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #dbe1e8;
+      z-index: 1;
+    }
+    .map-controls-bar {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <header class="topbar px-4 py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h1 class="page-title fs-4 m-0">Create Vehicle Cluster</h1>
+        <div class="role-badge">Super Admin</div>
+      </header>
+
+      <div class="content-body p-4">
+        <div class="operation-card">
+          <h5><i class="bi bi-plus-circle-fill text-primary"></i> Register New Cluster</h5>
+          <div class="operation-description">Select location directly on the map to automatically populate latitude and longitude.</div>
+
+          <form id="createClusterForm">
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label">Cluster Owner Name</label>
+                <input type="text" name="vehicleClusterOwnerName" class="form-control" placeholder="Enter owner name" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Owner Email</label>
+                <input type="email" name="email" class="form-control" placeholder="owner@example.com" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">PAN Number</label>
+                <input type="text" name="pan" class="form-control" placeholder="ABCDE1234F" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Vehicle Capacity</label>
+                <input type="number" name="vehicleCapacity" min="0" class="form-control" placeholder="e.g. 50" required />
+              </div>
+            </div>
+
+            <!-- 🗺️ INTERACTIVE MAP PICKER SECTION -->
+            <div class="mb-4 position-relative">
+              <label class="form-label d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-geo-alt-fill text-danger"></i> Pin Cluster Location on Map</span>
+                <span class="badge bg-light text-dark border">Click or Drag Pin to Pick Location</span>
+              </label>
+
+              <div class="position-relative">
+                <!-- Map Controls (Lock Zoom & Satellite View) -->
+                <div class="map-controls-bar">
+                  <button type="button" id="mapLayerToggle" class="btn btn-sm btn-light shadow-sm fw-bold">
+                    <i class="bi bi-layers-fill text-primary"></i> Satellite View
+                  </button>
+                  <button type="button" id="zoomLockToggle" class="btn btn-sm btn-warning shadow-sm fw-bold">
+                    <i class="bi bi-lock-fill"></i> Scroll Zoom: Locked
+                  </button>
+                </div>
+
+                <!-- Leaflet Container -->
+                <div id="pickerMap"></div>
+              </div>
+            </div>
+
+            <!-- AUTO-FILLED COORDINATES & ADDRESS DETAILS -->
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Latitude</label>
+                <input type="number" step="any" name="lat" id="inputLat" class="form-control bg-light" readonly required />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Longitude</label>
+                <input type="number" step="any" name="long" id="inputLong" class="form-control bg-light" readonly required />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">ZIP Code</label>
+                <input type="text" name="zipCode" id="inputZipCode" class="form-control" placeholder="e.g. 202001" required />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">State</label>
+                <input type="text" name="state" id="inputState" class="form-control" placeholder="e.g. Uttar Pradesh" required />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">City</label>
+                <input type="text" name="city" id="inputCity" class="form-control" placeholder="e.g. Aligarh" required />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Street Address</label>
+                <input type="text" name="streetAddress" id="inputAddress" class="form-control" placeholder="e.g. GT Road, Phase 1" required />
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">Owner Image URL</label>
+                <input type="text" name="image" class="form-control" placeholder="https://example.com/avatar.jpg" />
+              </div>
+            </div>
+
+            <div id="createClusterMessage" class="status-box mt-3"></div>
+
+            <button type="submit" class="btn btn-primary mt-4 py-2 px-4 fw-bold">
+              <i class="bi bi-check-circle-fill"></i> Create Cluster Record
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Leaflet Free Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- App Core JS -->
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/super-admin-api.js"></script>
+  <script src="../js/js2/super-admin-actions.js"></script>
+
+  <!-- Sidebar & Map Picker Logic Script -->
+  <script>
+    // Load Sidebar Component
+    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
+      document.getElementById('sidebar-container').innerHTML = html;
+      document.querySelector('[data-page="create-cluster"]')?.classList.add('active');
+    });
+
+    // ==========================================================
+    // LEAFLET INTERACTIVE MAP PICKER LOGIC
+    // ==========================================================
+    document.addEventListener("DOMContentLoaded", function() {
+      // Default Initial Location (India Center / Aligarh)
+      const defaultLat = 27.8974;
+      const defaultLng = 78.0880;
+
+      // Map Layers setup (Street & Satellite View)
+      const streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+
+      const satelliteTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+      });
+
+      // 1. Initialize Leaflet Map (Scroll Zoom Disabled by Default)
+      const map = L.map('pickerMap', {
+        center: [defaultLat, defaultLng],
+        zoom: 12,
+        scrollWheelZoom: false, // Prevents page scrolling stuck issue
+        layers: [streetTile]
+      });
+
+      // 2. Add Draggable Marker
+      const marker = L.marker([defaultLat, defaultLng], {
+        draggable: true
+      }).addTo(map);
+
+      // Auto update input coordinates
+      function updateInputs(lat, lng) {
+        document.getElementById("inputLat").value = parseFloat(lat).toFixed(6);
+        document.getElementById("inputLong").value = parseFloat(lng).toFixed(6);
+      }
+
+      // Initial Fill
+      updateInputs(defaultLat, defaultLng);
+
+      // 3. Marker Drag Event
+      marker.on('dragend', function(e) {
+        const position = marker.getLatLng();
+        updateInputs(position.lat, position.lng);
+      });
+
+      // 4. Map Click Event (Move marker to clicked position)
+      map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateInputs(e.latlng.lat, e.latlng.lng);
+      });
+
+      // 5. Scroll Zoom Lock/Unlock Toggle Functionality
+      let isZoomLocked = true;
+      const zoomLockBtn = document.getElementById("zoomLockToggle");
+
+      zoomLockBtn.addEventListener("click", function() {
+        if (isZoomLocked) {
+          map.scrollWheelZoom.enable();
+          isZoomLocked = false;
+          zoomLockBtn.className = "btn btn-sm btn-success shadow-sm fw-bold";
+          zoomLockBtn.innerHTML = `<i class="bi bi-unlock-fill"></i> Scroll Zoom: Unlocked`;
+        } else {
+          map.scrollWheelZoom.disable();
+          isZoomLocked = true;
+          zoomLockBtn.className = "btn btn-sm btn-warning shadow-sm fw-bold";
+          zoomLockBtn.innerHTML = `<i class="bi bi-lock-fill"></i> Scroll Zoom: Locked`;
+        }
+      });
+
+      // 6. Satellite / Street View Toggle Functionality
+      let currentLayer = "street";
+      const layerToggleBtn = document.getElementById("mapLayerToggle");
+
+      layerToggleBtn.addEventListener("click", function() {
+        if (currentLayer === "street") {
+          map.removeLayer(streetTile);
+          map.addLayer(satelliteTile);
+          currentLayer = "satellite";
+          layerToggleBtn.innerHTML = `<i class="bi bi-map-fill text-success"></i> Street View`;
+        } else {
+          map.removeLayer(satelliteTile);
+          map.addLayer(streetTile);
+          currentLayer = "street";
+          layerToggleBtn.innerHTML = `<i class="bi bi-layers-fill text-primary"></i> Satellite View`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

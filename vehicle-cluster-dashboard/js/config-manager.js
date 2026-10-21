@@ -1,4 +1,3 @@
-
 (function () {
   const STORAGE_KEY = "vehicle_cluster_dashboard_config";
 
@@ -6,7 +5,7 @@
     const baseConfig = {
       API_BASE_URL:
         window.APP_CONFIG?.API_BASE_URL ||
-        "http://localhost:5000/api/vehicle-clusters",
+        "http://localhost:5000/api/clusters",
 
       ACTIVE_CLUSTER_ID:
         window.APP_CONFIG?.ACTIVE_CLUSTER_ID || "",
@@ -67,7 +66,7 @@
 
     if (!mongoId) {
       throw new Error(
-        "MongoDB cluster _id was not returned by backend."
+        "Cluster _id was not returned by backend."
       );
     }
 

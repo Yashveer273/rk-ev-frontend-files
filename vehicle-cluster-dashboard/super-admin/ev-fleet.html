@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Admin - EV Fleet Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .table-custom-clean th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      background-color: #212529;
+      color: #fff;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+    .table-custom-clean td {
+      vertical-align: middle;
+      font-size: 0.85rem;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+    .truncate-cell {
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-copy {
+      height: 24px;
+      width: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+    .action-badge-group {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar Component -->
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <header class="topbar py-3 px-4 mb-4 border-bottom">
+        <h1 class="page-title text-dark fw-semibold fs-4 mb-0">
+          <i class="bi bi-ev-front text-dark me-2"></i>EV Fleet Management Console
+        </h1>
+        <div class="topbar-right d-flex align-items-center gap-3">
+          <a href="create-ev.html" class="btn btn-dark btn-sm fw-medium px-3 py-2">
+            <i class="bi bi-plus-lg me-1"></i> Register New EV
+          </a>
+          <div class="role-badge">Role: Super Admin</div>
+        </div>
+      </header>
+
+      <div class="content-body px-4">
+        
+        <!-- Search & Filter Bar -->
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-body bg-light rounded p-3">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-4">
+                <input type="text" id="evSearchInput" class="form-control" placeholder="Search by Plate, Model, Company...">
+              </div>
+              <div class="col-md-3">
+                <select id="evStatusFilter" class="form-select">
+                  <option value="">All Operational Statuses</option>
+                  <option value="Active">Active (चालू)</option>
+                  <option value="In Parking">In Parking (पार्किंग में)</option>
+                  <option value="In-service">In-service (सर्विसिंग पर)</option>
+                  <option value="Non-active">Inactive (बंद)</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select id="evLimitSelect" class="form-select">
+                  <option value="5">5 Per Page</option>
+                  <option value="10" selected>10 Per Page</option>
+                  <option value="25">25 Per Page</option>
+                  <option value="50">50 Per Page</option>
+                </select>
+              </div>
+              <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-dark w-100" id="evSearchBtn">
+                  <i class="bi bi-search me-1"></i> Search
+                </button>
+                <button class="btn btn-outline-dark" id="evRefreshBtn" title="Refresh">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EV Fleet Database Table -->
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle table-custom-clean mb-0">
+                <thead>
+                  <tr>
+                    <th class="ps-3 border-end">Vehicle ID</th>
+                    <th class="border-end">Number Plate</th>
+                    <th class="border-end">Gallery / Media</th>
+                    <th class="border-end">Manufacturer</th>
+                    <th class="border-end">Model Name</th>
+                    <th class="border-end">Year</th>
+                    <th class="border-end">Battery</th>
+                    <th class="border-end">Range</th>
+                    <th class="border-end">Purchase Price</th>
+                    <th class="border-end">Hub / Location</th>
+                    <th class="border-end">Operational Status</th>
+                    <th class="border-end">Edit Record</th>
+                    <th class="text-end pe-3">Delete Asset</th>
+                  </tr>
+                </thead>
+                <tbody id="evFleetTableRows">
+                  <tr>
+                    <td colspan="13" class="text-center py-5 text-muted">Loading EV Fleet Database...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 px-3 border-top">
+            <div id="paginationInfo" class="small text-muted">
+              Loading pagination info...
+            </div>
+            <nav>
+              <ul id="paginationControls" class="pagination pagination-sm mb-0">
+                <!-- Dynamic Pagination Buttons -->
+              </ul>
+            </nav>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Full Edit Vehicle Modal -->
+  <div class="modal fade" id="editVehicleModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title fs-6"><i class="bi bi-pencil-square me-2"></i> Update Vehicle Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="editVehicleForm">
+          <div class="modal-body p-4">
+            <input type="hidden" id="editVehicleId">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">No. Plate</label>
+                <input type="text" id="editNoPlate" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Model Name</label>
+                <input type="text" id="editModelName" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Year Model</label>
+                <input type="number" id="editYearModel" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Company Name</label>
+                <input type="text" id="editCompanyName" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Purchase Location / Hub</label>
+                <input type="text" id="editPurchaseLocation" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Battery Capacity (kWh)</label>
+                <input type="number" step="0.1" id="editBatteryCapacity" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Range (KM)</label>
+                <input type="number" id="editRangeKm" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Purchase Price (₹)</label>
+                <input type="number" id="editPurchasePrice" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Operational Status</label>
+                <select id="editStatus" class="form-select">
+                  <option value="Active">Active (चालू)</option>
+                  <option value="In Parking">In Parking (पार्किंग में)</option>
+                  <option value="In-service">In-service (सर्विसिंग पर)</option>
+                  <option value="Non-active">Inactive (बंद)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark fw-semibold"><i class="bi bi-check-lg me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- EV Image Management & Media Gallery Modal -->
+  <div class="modal fade" id="evImageModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title fs-6"><i class="bi bi-images me-2"></i> EV Media Gallery: <span id="modalVehiclePlate" class="fw-bold"></span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div id="evImageCarouselContainer" class="mb-4">
+            <div class="text-center py-5 text-muted">Loading media...</div>
+          </div>
+
+          <div class="card bg-light border-0 p-3 mt-3">
+            <h6 class="fw-bold mb-2 small text-uppercase text-secondary">Add New Angle Image (Internet URL)</h6>
+            <form id="addImageForm" onsubmit="handleAddVehicleImage(event)">
+              <input type="hidden" id="targetModalVehicleId">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <input type="text" class="form-control form-control-sm" id="newImageAngle" placeholder="Angle (e.g. Front, Side)" required>
+                </div>
+                <div class="col-md-7">
+                  <input type="url" class="form-control form-control-sm" id="newImageUrl" placeholder="Paste Image Internet URL (https://...)" required>
+                </div>
+                <div class="col-md-1">
+                  <button type="submit" class="btn btn-dark btn-sm w-100" title="Add"><i class="bi bi-check-lg"></i></button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/evFleetApiClient.js"></script>
+  <script src="../js/js2/ev-fleet-actions.js"></script>
+  <script>
+    fetch('../components/sidebar.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('sidebar-container').innerHTML = html;
+        document.querySelector('[data-page="ev-fleet"]')?.classList.add('active');
+      });
+  </script>
+</body>
+</html>

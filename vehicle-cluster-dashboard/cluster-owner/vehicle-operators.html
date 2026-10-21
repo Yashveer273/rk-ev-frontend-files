@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Operators - Cluster Owner</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <header class="topbar">
+        <h1 class="page-title">Vehicle Operators</h1>
+        <div class="role-badge">Cluster Owner</div>
+      </header>
+
+      <div class="content-body">
+        <!-- Add Operator Form -->
+        <div class="operation-card mb-4">
+          <h5><i class="bi bi-plus-circle text-primary"></i> Add Vehicle Operator</h5>
+          <div class="operation-description">Assign new vehicle operator record to the active cluster.</div>
+
+          <form id="operatorForm">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Vehicle ID</label>
+                <input type="text" name="vehicleId" class="form-control" placeholder="Leave empty for auto generation" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Investor ID</label>
+                <input type="text" name="investorId" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Operator ID</label>
+                <input type="text" name="operatorId" class="form-control" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Vehicle Start Date</label>
+                <input type="date" name="startDate" class="form-control" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Vehicle End Date</label>
+                <input type="date" name="endDate" class="form-control" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Operator Payment</label>
+                <input type="number" step="0.01" min="0" name="operatorPaymentAmount" class="form-control" value="0" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Investor Payment</label>
+                <input type="number" step="0.01" min="0" name="investorPaymentAmount" class="form-control" value="0" />
+              </div>
+            </div>
+
+            <div id="operatorMessage" class="status-box"></div>
+
+            <button type="submit" class="btn btn-primary mt-3">
+              <i class="bi bi-person-plus"></i> Add Operator
+            </button>
+          </form>
+        </div>
+
+        <!-- Operator List Table -->
+        <div class="operation-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-1"><i class="bi bi-list-ul text-secondary"></i> Assigned Operators</h5>
+              <div class="operation-description mb-0">Operators currently assigned to this cluster.</div>
+            </div>
+            <button type="button" id="refreshOperatorsButton" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+
+          <div class="operator-table-wrapper">
+            <table class="operator-table">
+              <thead>
+                <tr>
+                  <th>Vehicle ID</th>
+                  <th>Investor ID</th>
+                  <th>Operator ID</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Operator Payment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="operatorRows">
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">Loading operators...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/cluster-owner-api.js"></script>
+  <script src="../js/js2/owner-actions.js"></script>
+  <script>
+    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
+      document.getElementById('sidebar-container').innerHTML = html;
+      document.querySelector('[data-page="vehicle-operators"]')?.classList.add('active');
+    });
+  </script>
+</body>
+</html>

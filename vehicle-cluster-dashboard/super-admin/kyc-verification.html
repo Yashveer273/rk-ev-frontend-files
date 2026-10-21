@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KYC Verification CRM - Super Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <style>
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <header class="topbar px-4 py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h1 class="page-title fs-4 m-0">KYC Verification CRM</h1>
+        <div class="role-badge">Super Admin</div>
+      </header>
+
+      <div class="content-body p-4">
+        
+        <!-- 🔍 SEARCH & RELOAD BAR -->
+        <div class="operation-card mb-4">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-8">
+              <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search by Owner Name, Email, ID or City..." />
+            </div>
+            <div class="col-md-4 text-end">
+              <button type="button" id="reloadPendingBtn" class="btn btn-outline-secondary w-100 fw-bold">
+                <i class="bi bi-arrow-clockwise"></i> <span id="reloadBtnText">Refresh Requests</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📊 CRM TABLE WITH PAGINATION -->
+        <div class="operation-card p-0 overflow-hidden shadow-sm">
+          <div class="p-4 pb-3 d-flex justify-content-between align-items-center bg-white border-bottom">
+            <div>
+              <h5 class="m-0 fw-bold text-dark"><i class="bi bi-shield-shaded text-success"></i> Pending KYC Requests</h5>
+              <p class="text-muted small mb-0">Review and verify cluster registrations submitted by owners.</p>
+            </div>
+          </div>
+
+          <div class="operator-table-wrapper border-0 rounded-0">
+            <table class="operator-table m-0">
+              <thead>
+                <tr>
+                  <th>Owner ID / Name</th>
+                  <th>Contact & PAN</th>
+                  <th>Location (City/State)</th>
+                  <th>Capacity</th>
+                  <th>Submission Date</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="kycTableRows">
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">Loading pending requests...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="pagination-container">
+            <span class="text-muted small" id="paginationInfo">Showing 0-0 of 0 requests</span>
+            <ul class="pagination pagination-sm m-0" id="paginationControls"></ul>
+          </div>
+        </div>
+
+        <div id="kycVerificationMessage" class="status-box mt-3"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Core Scripts -->
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/cluster-queries-api.js"></script>
+  <script src="../js/super-admin-api.js"></script>
+  <script src="../js/js2/super-admin-actions.js"></script>
+  
+  <script>
+    // Load Sidebar Component
+    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
+      document.getElementById('sidebar-container').innerHTML = html;
+      document.querySelector('[data-page="kyc-verification"]')?.classList.add('active');
+    });
+
+    let allPendingCache = [];
+    let currentPage = 1;
+    const rowsPerPage = 5;
+
+    function setReloadButtonLoading(isLoading) {
+      const reloadBtn = document.getElementById("reloadPendingBtn");
+      const btnText = document.getElementById("reloadBtnText");
+      if (!reloadBtn || !btnText) return;
+
+      if (isLoading) {
+        reloadBtn.disabled = true;
+        btnText.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Loading...`;
+      } else {
+        reloadBtn.disabled = false;
+        btnText.innerHTML = `Refresh Requests`;
+      }
+    }
+
+    // Fetch Pending Clusters from API
+    async function fetchPendingKycList() {
+      const tbody = document.getElementById("kycTableRows");
+      if (!tbody) return;
+
+      setReloadButtonLoading(true);
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Fetching pending requests...</td></tr>`;
+
+      try {
+        const res = await ClusterQueryAPI.getClustersByKycStatus();
+        
+        let clusters = [];
+        if (res?.data) {
+          if (Array.isArray(res.data)) {
+            clusters = res.data;
+          } else if (res.data.pending && Array.isArray(res.data.pending)) {
+            clusters = res.data.pending;
+          }
+        } else if (Array.isArray(res)) {
+          clusters = res;
+        } else if (res?.pending && Array.isArray(res.pending)) {
+          clusters = res.pending;
+        }
+
+        allPendingCache = clusters.filter(c => {
+          const status = c.kyc?.kycStatus || c.kycStatus;
+          return !status || status === 'Pending' || status === 'pending';
+        });
+
+        currentPage = 1;
+        renderKycTable();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Failed to load requests: ${err.message}</td></tr>`;
+      } finally {
+        setReloadButtonLoading(false);
+      }
+    }
+
+    // Render Table with Search Filter and Pagination
+    function renderKycTable() {
+      const tbody = document.getElementById("kycTableRows");
+      const searchInput = document.getElementById("searchInput");
+      const paginationInfo = document.getElementById("paginationInfo");
+      const paginationControls = document.getElementById("paginationControls");
+      if (!tbody) return;
+
+      const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+      // Filter Data based on Search Query
+      const filteredData = allPendingCache.filter(c => {
+        const ownerName = (c.vehicleClusterDetails?.ownerName || c.vehicleClusterOwnerName || "").toLowerCase();
+        const ownerId = (c.vehicleClusterOwnerId || "").toLowerCase();
+        const email = (c.vehicleClusterDetails?.email || "").toLowerCase();
+        const city = (c.vehicleClusterLocation?.city || "").toLowerCase();
+        return ownerName.includes(searchTerm) || ownerId.includes(searchTerm) || email.includes(searchTerm) || city.includes(searchTerm);
+      });
+
+      const totalItems = filteredData.length;
+      const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIdx = (currentPage - 1) * rowsPerPage;
+      const endIdx = Math.min(startIdx + rowsPerPage, totalItems);
+      const paginatedItems = filteredData.slice(startIdx, endIdx);
+
+      if (paginatedItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No pending KYC records found.</td></tr>`;
+        if (paginationInfo) paginationInfo.textContent = "Showing 0-0 of 0 requests";
+        if (paginationControls) paginationControls.innerHTML = "";
+        return;
+      }
+
+      // Render Rows
+      tbody.innerHTML = paginatedItems.map(c => {
+        const clusterId = c._id;
+        const ownerId = c.vehicleClusterOwnerId || "N/A";
+        const ownerName = c.vehicleClusterDetails?.ownerName || c.vehicleClusterOwnerName || "Unknown";
+        const email = c.vehicleClusterDetails?.email || "N/A";
+        const pan = c.vehicleClusterDetails?.pan || "N/A";
+        const city = c.vehicleClusterLocation?.city || "N/A";
+        const state = c.vehicleClusterLocation?.state || "N/A";
+        const capacity = c.vehicleCapacity || 0;
+        
+        // Format Date & Time cleanly
+        let formattedDate = "N/A";
+        if (c.createdAt) {
+          const dateObj = new Date(c.createdAt);
+          formattedDate = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        return `
+          <tr>
+            <td>
+              <strong>${ownerId}</strong><br>
+              <span class="text-secondary small">${ownerName}</span>
+            </td>
+            <td>
+              <span class="small d-block">📧 ${email}</span>
+              <span class="small text-muted">PAN: ${pan}</span>
+            </td>
+            <td>${city}, ${state}</td>
+            <td>${capacity} Vehicles</td>
+            <td><span class="small text-muted"><i class="bi bi-clock"></i> ${formattedDate}</span></td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-success fw-bold px-3 py-1 execute-kyc-btn" data-id="${clusterId}" data-status="Verified">
+                  <i class="bi bi-check-circle"></i> Verify
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger fw-bold px-3 py-1 execute-kyc-btn" data-id="${clusterId}" data-status="Rejected">
+                  <i class="bi bi-x-circle"></i> Reject
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      // Attach Click Event to Verify / Reject Buttons inside rows
+      document.querySelectorAll(".execute-kyc-btn").forEach(btn => {
+        btn.addEventListener("click", async function() {
+          const targetId = this.getAttribute("data-id");
+          const targetStatus = this.getAttribute("data-status");
+          const msgBox = document.getElementById("kycVerificationMessage");
+
+          try {
+            this.disabled = true;
+            this.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+
+            await SuperAdminAPI.verifyKyc(targetId, targetStatus);
+
+            if (msgBox) {
+              msgBox.innerHTML = `<div class="alert alert-success py-2">Cluster KYC successfully <strong>${targetStatus}</strong>!</div>`;
+            }
+
+            // Refresh table list immediately so it removes from pending list
+            await fetchPendingKycList();
+          } catch (error) {
+            if (msgBox) {
+              msgBox.innerHTML = `<div class="alert alert-danger py-2">Error: ${error.message}</div>`;
+            }
+            this.disabled = false;
+          }
+        });
+      });
+
+      // Pagination Controls
+      if (paginationInfo) {
+        paginationInfo.textContent = `Showing ${totalItems > 0 ? startIdx + 1 : 0}-${endIdx} of ${totalItems} requests`;
+      }
+
+      if (paginationControls) {
+        let pagesHtml = `
+          <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">Prev</a>
+          </li>
+        `;
+
+        for (let i = 1; i <= totalPages; i++) {
+          pagesHtml += `
+            <li class="page-item ${currentPage === i ? 'active' : ''}">
+              <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
+          `;
+        }
+
+        pagesHtml += `
+          <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+          </li>
+        `;
+
+        paginationControls.innerHTML = pagesHtml;
+
+        paginationControls.querySelectorAll(".page-link").forEach(link => {
+          link.addEventListener("click", function(e) {
+            e.preventDefault();
+            const targetPage = parseInt(this.getAttribute("data-page"));
+            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPages) {
+              currentPage = targetPage;
+              renderKycTable();
+            }
+          });
+        });
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchPendingKycList();
+
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) {
+        searchInput.addEventListener("input", () => {
+          currentPage = 1;
+          renderKycTable();
+        });
+      }
+
+      const reloadBtn = document.getElementById("reloadPendingBtn");
+      if (reloadBtn) {
+        reloadBtn.addEventListener("click", fetchPendingKycList);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!-- ==========================================================
+   VEHICLE CLUSTER - SIDEBAR COMPONENT (Professional Icons)
+   File Path: components/sidebar.html
+   ========================================================== -->
+<aside class="sidebar">
+
+  <!-- Brand / Logo Section -->
+  <div class="brand">
+    <div class="brand-title">
+      Vehicle Cluster
+    </div>
+    <div class="brand-subtitle">
+      Transport Management
+    </div>
+  </div>
+
+  <!-- General Navigation -->
+  <div class="nav-title">
+    Main Menu
+  </div>
+
+  <a href="../super-admin/dashboard.html" class="sidebar-link active" data-page="dashboard">
+    <i class="bi bi-speedometer2"></i>
+    <span>Dashboard Overview</span>
+  </a>
+
+  <!-- ================================================= -->
+  <!-- SUPER ADMIN MODULE LINKS (Saare Super Admin Controls yahan hain) -->
+  <!-- ================================================= -->
+  <div data-dashboard-role="super-admin">
+
+    <div class="nav-title mt-4">
+      Super Admin Controls
+    </div>
+
+    <a href="../super-admin/create-cluster.html" class="sidebar-link" data-page="create-cluster">
+      <i class="bi bi-plus-circle"></i>
+      <span>Create Cluster</span>
+    </a>
+
+    <a href="../super-admin/cluster-management.html" class="sidebar-link" data-page="cluster-management">
+      <i class="bi bi-gear-fill"></i>
+      <span>Cluster Management</span>
+    </a>
+
+    <a href="../super-admin/kyc-verification.html" class="sidebar-link" data-page="kyc-verification">
+      <i class="bi bi-shield-check"></i>
+      <span>KYC Verification</span>
+    </a>
+
+    <!-- EV Vehicle Management Tabs under Super Admin Controls -->
+    <a href="../super-admin/ev-fleet.html" class="sidebar-link mt-2" data-page="ev-fleet">
+      <i class="bi bi-lightning-charge-fill text-warning"></i>
+      <span>EV Fleet Overview</span>
+    </a>
+
+    <a href="../super-admin/create-ev.html" class="sidebar-link" data-page="ev-register">
+      <i class="bi bi-plus-square-fill text-success"></i>
+      <span>Register New EV</span>
+    </a>
+
+   
+
+  </div>
+
+
+  <!-- ================================================= -->
+  <!-- CLUSTER OWNER MODULE LINKS -->
+  <!-- ================================================= -->
+  <div data-dashboard-role="cluster-owner">
+
+    <div class="nav-title mt-4">
+      Owner Portal
+    </div>
+
+    <a href="../cluster-owner/dashboard.html" class="sidebar-link" data-page="owner-dashboard">
+      <i class="bi bi-building"></i>
+      <span>Cluster Info</span>
+    </a>
+
+    <a href="../cluster-owner/kyc-submission.html" class="sidebar-link" data-page="kyc-submission">
+      <i class="bi bi-file-earmark-text"></i>
+      <span>Submit KYC</span>
+    </a>
+
+    <a href="../cluster-owner/vehicle-operators.html" class="sidebar-link" data-page="vehicle-operators">
+      <i class="bi bi-truck"></i>
+      <span>Vehicle Operators</span>
+    </a>
+
+  </div>
+
+</aside>
+
+<style>
+  /* Sidebar Specific Professional Styles */
+  .sidebar {
+    width: 255px;
+    min-height: 100vh;
+    background: #111827;
+    color: #fff;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+
+  .brand {
+    padding: 4px 12px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 20px;
+  }
+
+  .brand-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+  }
+
+  .brand-subtitle {
+    color: #9ca3af;
+    font-size: 11px;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .nav-title {
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .sidebar-link i {
+    font-size: 16px;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+  }
+
+  .sidebar-link:hover,
+  .sidebar-link.active {
+    color: #fff;
+    background: #1f2937;
+  }
+
+  .sidebar-link:hover i,
+  .sidebar-link.active i {
+    color: #ffffff;
+  }
+
+  @media (max-width: 992px) {
+    .sidebar {
+      width: 220px;
+    }
+  }
+</style>
