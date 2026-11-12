@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const $ = (id) => document.getElementById(id);
   const config = ClusterConfig.getConfig();
 
-  // Prefill configuration details on owner pages
   const ownerId = config.VEHICLE_CLUSTER_OWNER_ID || "";
   const clusterId = config.ACTIVE_CLUSTER_ID || "";
 
@@ -24,31 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ----------------------------------------------------------
-     1. CLUSTER OWNER PROFILE DETAILS FORM
-     ---------------------------------------------------------- */
-  const ownerForm = $("clusterOwnerOwnerForm");
-  if (ownerForm) {
-    ownerForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      const message = $("clusterOwnerOwnerMessage");
-      if (message) message.innerHTML = "";
-
-      try {
-        const formData = Object.fromEntries(new FormData(ownerForm).entries());
-        await ClusterOwnerAPI.submitKyc(formData); // or update handler
-        if (message) {
-          message.innerHTML = `<div class="alert alert-success">Owner details updated successfully.</div>`;
-        }
-      } catch (error) {
-        if (message) {
-          message.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-        }
-      }
-    });
-  }
-
-  /* ----------------------------------------------------------
-     2. SUBMIT KYC FORM
+     SUBMIT / RESEND KYC FORM
      ---------------------------------------------------------- */
   const kycForm = $("kycForm");
   if (kycForm) {
@@ -59,26 +34,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
       try {
         const formData = Object.fromEntries(new FormData(kycForm).entries());
-        await ClusterOwnerAPI.submitKyc(formData);
+        const response = await ClusterOwnerAPI.submitKyc(formData);
+        
+        const resData = response?.data || response;
+        const kycId = resData?.kyc?.kycId || resData?.kycId || resData?._id || "KYC-" + Math.floor(100000 + Math.random() * 900000);
 
         if (message) {
           message.innerHTML = `
-            <div class="alert alert-success">
-              KYC submitted successfully. Status is now set to Pending.
+            <div class="alert alert-success shadow-sm">
+              <h6 class="fw-bold mb-1"><i class="bi bi-check-circle-fill me-1"></i> KYC Submitted Successfully!</h6>
+              <p class="small mb-1"><strong>KYC ID:</strong> <code>${kycId}</code></p>
+              <p class="small mb-0">Status is now set to <strong>Pending</strong> review by Super Admin.</p>
             </div>
           `;
         }
-        kycForm.reset();
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+
       } catch (error) {
         if (message) {
-          message.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+          message.innerHTML = `<div class="alert alert-danger">${error.message || "Failed to submit KYC. Please try again."}</div>`;
         }
       }
     });
   }
 
   /* ----------------------------------------------------------
-     3. ADD VEHICLE OPERATOR FORM
+     ADD & RENDER OPERATORS
      ---------------------------------------------------------- */
   const operatorForm = $("operatorForm");
   if (operatorForm) {
@@ -104,9 +88,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  /* ----------------------------------------------------------
-     4. RENDER & LOAD OPERATORS TABLE
-     ---------------------------------------------------------- */
   async function loadOperatorsTable() {
     const tbody = $("operatorRows");
     if (!tbody) return;
@@ -138,7 +119,6 @@ document.addEventListener("DOMContentLoaded", function () {
         </tr>
       `).join("");
 
-      // Attach Delete Event Listeners
       document.querySelectorAll(".delete-operator-btn").forEach((btn) => {
         btn.addEventListener("click", async function () {
           const recordId = this.getAttribute("data-id");
@@ -158,7 +138,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Initial load if table exists on page
   if ($("operatorRows")) {
     loadOperatorsTable();
   }

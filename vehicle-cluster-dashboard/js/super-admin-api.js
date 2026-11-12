@@ -1,6 +1,5 @@
 (function () {
   const { request } = window.ClusterAPI;
-  const $ = (id) => document.getElementById(id);
 
   async function createCluster(data) {
     try {
@@ -44,32 +43,44 @@
     );
   }
 
-  async function updateOwnerDetails(vehicleClusterOwnerId, data) {
+  async function updateClusterDetails(vehicleClusterOwnerId, data) {
     if (!vehicleClusterOwnerId) throw new Error("Vehicle Cluster Owner ID is required.");
+    
+    const payload = {
+      ownerName: data.ownerName || "",
+      email: data.email || "",
+      pan: data.pan || "",
+      status: data.status || "Active",
+      vehicleCapacity: data.vehicleCapacity !== undefined ? Number(data.vehicleCapacity) : undefined
+    };
+
+    if (data.password && data.password.trim() !== "") {
+      payload.password = data.password.trim();
+    }
+
     return request(
       "PUT",
       `/${encodeURIComponent(vehicleClusterOwnerId)}/owner-details`,
-      {
-        ownerName: data.ownerName || "",
-        pan: data.pan || "",
-        email: data.email || "",
-        image: data.image || "",
-        status: data.status || undefined
-      },
+      payload,
       { "x-user-role": "super-admin" }
     );
   }
 
-  async function verifyKyc(targetId, kycStatus) {
+ async function verifyKyc(kycIdOrClusterId, kycStatus, rejectionReason = "") {
     if (!["Verified", "Rejected"].includes(kycStatus)) {
       throw new Error("kycStatus must be either Verified or Rejected");
     }
     return request(
       "PUT",
-      `/${encodeURIComponent(targetId)}/kyc-verify/${encodeURIComponent(targetId)}`,
-      { kycStatus },
+      `/admin/kyc-verify/${encodeURIComponent(kycIdOrClusterId)}/status`,
+      { kycStatus, rejectionReason },
       { "x-user-role": "super-admin" }
     );
+  }
+
+  // Fetch categorized KYC requests with backend pagination
+  async function getAllKycRequests(status = "Pending", page = 1, limit = 5) {
+    return request("GET", `/admin/kyc-requests?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`, null, { "x-user-role": "super-admin" });
   }
 
   async function deleteCluster(id) {
@@ -77,62 +88,13 @@
     return request("DELETE", `/${encodeURIComponent(id)}`, null, { "x-user-role": "super-admin" });
   }
 
-  // Form Builders & Handlers
-  function buildCreatePayload(formData) {
-    return {
-      vehicleClusterLocation: {
-        lat: Number(formData.lat),
-        long: Number(formData.long),
-        zipCode: formData.zipCode,
-        state: formData.state,
-        city: formData.city,
-        streetAddress: formData.streetAddress
-      },
-      vehicleCapacity: Number(formData.vehicleCapacity || 0),
-      vehicleClusterOwnerName: formData.vehicleClusterOwnerName,
-      vehicleClusterDetails: {
-        ownerName: formData.ownerName || formData.vehicleClusterOwnerName || "",
-        pan: formData.pan || "",
-        email: formData.email || "",
-        image: formData.image || ""
-      }
-    };
-  }
-
-  async function handleCreateForm(form) {
-    const formData = Object.fromEntries(new FormData(form).entries());
-    return createCluster(buildCreatePayload(formData));
-  }
-
-  async function handleCapacityForm(form) {
-    const formData = Object.fromEntries(new FormData(form).entries());
-    const ownerId = formData.vehicleClusterOwnerId || window.APP_CONFIG.VEHICLE_CLUSTER_OWNER_ID;
-    return updateCapacity(ownerId, formData.vehicleCapacity);
-  }
-
-  async function handleLocationForm(form) {
-    const formData = Object.fromEntries(new FormData(form).entries());
-    const ownerId = formData.vehicleClusterOwnerId || window.APP_CONFIG.VEHICLE_CLUSTER_OWNER_ID;
-    return updateLocation(ownerId, formData);
-  }
-
-  async function handleOwnerDetailsForm(form) {
-    const formData = Object.fromEntries(new FormData(form).entries());
-    const ownerId = formData.vehicleClusterOwnerId || window.APP_CONFIG.VEHICLE_CLUSTER_OWNER_ID;
-    return updateOwnerDetails(ownerId, formData);
-  }
-
   window.SuperAdminAPI = {
     createCluster,
     updateCapacity,
     updateLocation,
-    updateOwnerDetails,
+    updateClusterDetails,
     verifyKyc,
-    deleteCluster,
-    buildCreatePayload,
-    handleCreateForm,
-    handleCapacityForm,
-    handleLocationForm,
-    handleOwnerDetailsForm
+    getAllKycRequests,
+    deleteCluster
   };
 })();

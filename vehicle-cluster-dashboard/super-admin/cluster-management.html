@@ -47,7 +47,7 @@
     }
     .copy-btn {
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       padding: 1px 5px;
       border: 1px solid #ced4da;
       background: #f8f9fa;
@@ -59,6 +59,13 @@
       background: #e9ecef;
       color: #0d6efd;
       border-color: #0d6efd;
+    }
+    .data-pill {
+      background: #f8f9fa;
+      border: 1px solid #e2e8f0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
     }
   </style>
 </head>
@@ -86,6 +93,8 @@
                 <option value="">All Statuses</option>
                 <option value="Active">Active</option>
                 <option value="Pending">Pending</option>
+                <option value="Restricted">Restricted</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
             <div class="col-md-2">
@@ -111,13 +120,13 @@
             <table class="operator-table m-0">
               <thead>
                 <tr>
-                  <th>Cluster IDs</th>
-                  <th>Owner Details</th>
+                  <th>Cluster ID</th>
+                  <th>Owner ID</th>
+                  <th>Owner Details & Credentials</th>
                   <th>Location & PAN</th>
                   <th>Capacity</th>
                   <th>Cluster Status</th>
                   <th>KYC Status</th>
-                  <th>Created At</th>
                   <th class="text-end">Actions</th>
                 </tr>
               </thead>
@@ -140,12 +149,12 @@
     </main>
   </div>
 
-  <!-- 🗺️ ANIMATED FREE MAP POPUP MODAL -->
-  <div class="modal fade" id="clusterMapModal" tabindex="-1" aria-labelledby="clusterMapModalLabel" data-bs-backdrop="static" aria-hidden="true">
+  <!-- 🗺️ MAP POPUP MODAL -->
+  <div class="modal fade" id="clusterMapModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-light">
-          <h5 class="modal-title fw-bold text-dark" id="clusterMapModalLabel">
+          <h5 class="modal-title fw-bold text-dark">
             <i class="bi bi-geo-alt-fill text-danger"></i> <span id="modalOwnerTitle">Cluster Location</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -169,14 +178,65 @@
     </div>
   </div>
 
-  <!-- 🗑️ DELETE CONFIRMATION & PASSWORD MODAL -->
-  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" data-bs-backdrop="static" aria-hidden="true">
+  <!-- ✏️ PROFESSIONAL EDIT & STATUS UPDATE MODAL -->
+  <div class="modal fade" id="editOwnerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square"></i> Edit Cluster Profile & Access Control</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="editOwnerForm">
+            <input type="hidden" id="editOwnerIdInput" />
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">OWNER NAME</label>
+                <input type="text" id="editOwnerNameInput" class="form-control" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">OWNER EMAIL</label>
+                <input type="email" id="editOwnerEmailInput" class="form-control" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">ACCESS PASSWORD</label>
+                <input type="text" id="editOwnerPasswordInput" class="form-control" placeholder="Enter new password" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">PAN NUMBER</label>
+                <input type="text" id="editOwnerPanInput" class="form-control" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">VEHICLE CAPACITY</label>
+                <input type="number" id="editVehicleCapacityInput" class="form-control" min="0" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-muted">CLUSTER STATUS (ACCESS)</label>
+                <select id="editOwnerStatusInput" class="form-select border-primary fw-bold">
+                  <option value="Active">Active (Normal Access)</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Restricted">Restricted (Block Login Access)</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+            <div id="editOwnerMessage" class="mt-3"></div>
+            <div class="modal-footer px-0 pb-0 mt-4 border-top">
+              <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗑️ DELETE CONFIRMATION MODAL -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title fw-bold" id="deleteConfirmModalLabel">
-            <i class="bi bi-exclamation-triangle-fill"></i> Confirm Cluster Deletion
-          </h5>
+          <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Confirm Cluster Deletion</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body p-4">
@@ -197,11 +257,8 @@
     </div>
   </div>
 
-  <!-- Leaflet Free Map JS & Bootstrap Bundle JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- App Core Scripts -->
   <script src="../js/config-manager.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/cluster-queries-api.js"></script>
@@ -209,13 +266,11 @@
   <script src="../js/js2/super-admin-actions.js"></script>
 
   <script>
-    // Load Sidebar Component
     fetch('../components/sidebar.html').then(res => res.text()).then(html => {
       document.getElementById('sidebar-container').innerHTML = html;
       document.querySelector('[data-page="cluster-management"]')?.classList.add('active');
     });
 
-    // FREE MAP POPUP MODAL CONTROLLER
     let popupMap = null;
     let popupMarker = null;
     let isModalZoomLocked = true;
@@ -231,12 +286,8 @@
 
       setTimeout(() => {
         if (!popupMap) {
-          const streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-          });
-          const satelliteTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-          });
+          const streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
+          const satelliteTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
 
           popupMap = L.map('popupClusterMap', {
             center: [lat, lng],
@@ -248,36 +299,33 @@
           popupMarker = L.marker([lat, lng]).addTo(popupMap);
           popupMarker.bindPopup(`<b>${ownerName}</b><br>ID: ${ownerId}<br>City: ${city}`).openPopup();
 
-          const zoomBtn = document.getElementById("modalZoomLockToggle");
-          zoomBtn.onclick = function() {
+          document.getElementById("modalZoomLockToggle").onclick = function() {
             if (isModalZoomLocked) {
               popupMap.scrollWheelZoom.enable();
               isModalZoomLocked = false;
-              zoomBtn.className = "btn btn-sm btn-success shadow-sm fw-bold";
-              zoomBtn.innerHTML = `<i class="bi bi-unlock-fill"></i> Unlocked`;
+              this.className = "btn btn-sm btn-success shadow-sm fw-bold";
+              this.innerHTML = `<i class="bi bi-unlock-fill"></i> Unlocked`;
             } else {
               popupMap.scrollWheelZoom.disable();
               isModalZoomLocked = true;
-              zoomBtn.className = "btn btn-sm btn-warning shadow-sm fw-bold";
-              zoomBtn.innerHTML = `<i class="bi bi-lock-fill"></i> Locked`;
+              this.className = "btn btn-sm btn-warning shadow-sm fw-bold";
+              this.innerHTML = `<i class="bi bi-lock-fill"></i> Locked`;
             }
           };
 
-          const layerBtn = document.getElementById("modalLayerToggle");
-          layerBtn.onclick = function() {
+          document.getElementById("modalLayerToggle").onclick = function() {
             if (modalCurrentLayer === "street") {
               popupMap.removeLayer(streetTile);
               popupMap.addLayer(satelliteTile);
               modalCurrentLayer = "satellite";
-              layerBtn.innerHTML = `<i class="bi bi-map-fill text-success"></i> Street`;
+              this.innerHTML = `<i class="bi bi-map-fill text-success"></i> Street`;
             } else {
               popupMap.removeLayer(satelliteTile);
               popupMap.addLayer(streetTile);
               modalCurrentLayer = "street";
-              layerBtn.innerHTML = `<i class="bi bi-layers-fill text-primary"></i> Satellite`;
+              this.innerHTML = `<i class="bi bi-layers-fill text-primary"></i> Satellite`;
             }
           };
-
         } else {
           popupMap.invalidateSize();
           popupMap.setView([lat, lng], 15);
@@ -287,14 +335,25 @@
       }, 300);
     };
 
-    // Global copy to clipboard helper function
+    window.openEditClusterModal = function(ownerId, ownerName, email, pan, status, capacity, password) {
+      document.getElementById('editOwnerIdInput').value = ownerId;
+      document.getElementById('editOwnerNameInput').value = ownerName !== "null" ? ownerName : "";
+      document.getElementById('editOwnerEmailInput').value = email !== "null" ? email : "";
+      document.getElementById('editOwnerPanInput').value = pan !== "null" ? pan : "";
+      document.getElementById('editOwnerPasswordInput').value = password !== "null" ? password : "";
+      document.getElementById('editOwnerStatusInput').value = status || "Active";
+      document.getElementById('editVehicleCapacityInput').value = capacity || 0;
+      document.getElementById('editOwnerMessage').innerHTML = "";
+
+      const modal = new bootstrap.Modal(document.getElementById('editOwnerModal'));
+      modal.show();
+    };
+
     window.copyToClipboard = function(text, element) {
       navigator.clipboard.writeText(text).then(() => {
         const originalHtml = element.innerHTML;
         element.innerHTML = `<i class="bi bi-check2 text-success"></i>`;
-        setTimeout(() => {
-          element.innerHTML = originalHtml;
-        }, 1500);
+        setTimeout(() => { element.innerHTML = originalHtml; }, 1500);
       });
     };
   </script>

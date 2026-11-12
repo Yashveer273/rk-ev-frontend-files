@@ -1,8 +1,3 @@
-/* ==========================================================
-   SUPER ADMIN ACTIONS & FORM HANDLERS (FULL COMPLETE FILE)
-   File Path: js/js2/super-admin-actions.js
-   ========================================================== */
-
 document.addEventListener("DOMContentLoaded", function () {
   const $ = (id) => document.getElementById(id);
 
@@ -24,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
           message.innerHTML = `
             <div class="alert alert-success">
               Cluster created successfully!<br>
-              <strong>_ID:</strong> ${cluster._id || "N/A"}<br>
+              <strong>Cluster ID:</strong> ${cluster._id || "N/A"}<br>
               <strong>Owner ID:</strong> ${cluster.vehicleClusterOwnerId || "N/A"}
             </div>
           `;
@@ -48,7 +43,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
-
+window.openEvAssignmentPage = function(clusterId, capacity) {
+  window.location.href = `ev-cluster-assignment.html?clusterId=${encodeURIComponent(clusterId)}&capacity=${encodeURIComponent(capacity || 0)}`;
+};
   /* ----------------------------------------------------------
      2. UPDATE CAPACITY FORM SUBMISSION
      ---------------------------------------------------------- */
@@ -132,7 +129,57 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ----------------------------------------------------------
-     5. CLUSTER LIST MANAGEMENT WITH IDs & COPY BUTTONS
+     5. EDIT OWNER / CREDENTIALS FORM SUBMISSION (With Capacity & Status)
+     ---------------------------------------------------------- */
+  const editOwnerForm = $("editOwnerForm");
+  if (editOwnerForm) {
+    editOwnerForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const msg = $("editOwnerMessage");
+      if (msg) msg.innerHTML = "";
+
+      const ownerId = $("editOwnerIdInput").value;
+      const newCapacity = $("editVehicleCapacityInput").value;
+      
+      const payload = {
+        ownerName: $("editOwnerNameInput").value,
+        email: $("editOwnerEmailInput").value,
+        pan: $("editOwnerPanInput").value,
+        password: $("editOwnerPasswordInput").value,
+        status: $("editOwnerStatusInput").value,
+        vehicleCapacity: newCapacity !== "" ? Number(newCapacity) : undefined
+      };
+
+      try {
+        // 1. Update owner details, status & password
+        await SuperAdminAPI.updateClusterDetails(ownerId, payload);
+
+        // 2. Also update capacity explicitly if changed
+        if (newCapacity !== "") {
+          await SuperAdminAPI.updateCapacity(ownerId, newCapacity);
+        }
+
+        if (msg) {
+          msg.innerHTML = `<div class="alert alert-success py-2">Cluster details, capacity & status updated successfully!</div>`;
+        }
+
+        setTimeout(() => {
+          const modalEl = $("editOwnerModal");
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+          fetchAndRenderClusters();
+        }, 1000);
+
+      } catch (err) {
+        if (msg) {
+          msg.innerHTML = `<div class="alert alert-danger py-2">${err.message}</div>`;
+        }
+      }
+    });
+  }
+
+  /* ----------------------------------------------------------
+     6. CLUSTER LIST MANAGEMENT (Separate Columns & Clean UI)
      ---------------------------------------------------------- */
   const tbody = $("clusterTableRows");
   const searchInput = $("searchInput");
@@ -156,6 +203,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const filterParams = {};
       if (searchInput && searchInput.value.trim()) {
         filterParams.city = searchInput.value.trim();
+      }
+      if (statusFilter && statusFilter.value.trim()) {
+        filterParams.status = statusFilter.value.trim();
       }
 
       const response = await ClusterQueryAPI.getClusters(filterParams);
@@ -192,6 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const ownerId = cluster.vehicleClusterOwnerId || "-";
       const ownerName = cluster.vehicleClusterDetails?.ownerName || cluster.vehicleClusterOwnerName || "-";
       const ownerEmail = cluster.vehicleClusterDetails?.email || "-";
+      const ownerPassword = cluster.vehicleClusterDetails?.password || "••••••••";
       const pan = cluster.vehicleClusterDetails?.pan || "-";
       
       const city = cluster.vehicleClusterLocation?.city || "-";
@@ -214,53 +265,73 @@ document.addEventListener("DOMContentLoaded", function () {
       if (lat !== undefined && long !== undefined && lat !== null && long !== null) {
         const safeName = ownerName.replace(/'/g, "\\'");
         mapActionButton = `
-          <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1 fw-bold" onclick="openClusterMapPopup(${lat}, ${long}, '${safeName}', '${ownerId}', '${city}')">
-            <i class="bi bi-geo-alt-fill"></i> View Location
+          <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1 fw-bold" onclick="openClusterMapPopup(${lat}, ${long}, '${safeName}', '${ownerId}', '${city}')" title="View Location">
+            <i class="bi bi-geo-alt-fill"></i>
           </button>
         `;
       }
 
-      const actionsHtml = `
-        <div class="d-flex justify-content-end gap-2 align-items-center">
+     // Actions Column definition
+    const actionsHtml = `
+        <div class="d-flex justify-content-end gap-1 align-items-center">
+          <button type="button" class="btn btn-sm btn-outline-dark px-2 py-1 fw-bold" onclick="openEvAssignmentPage('${mongoId}', ${capacity})" title="Manage Fleet Allocation">
+            <i class="bi bi-ev-front"></i> EVs
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary px-2 py-1 fw-bold" onclick="openEditClusterModal('${ownerId}', '${ownerName}', '${ownerEmail}', '${pan}', '${clusterWorkingStatus}', ${capacity}, '${ownerPassword}')" title="Edit Details & Status">
+            <i class="bi bi-pencil-fill"></i> Edit
+          </button>
           ${mapActionButton}
-          <button type="button" class="btn btn-sm btn-outline-secondary text-danger px-2 py-1 fw-bold trigger-delete-btn" data-id="${mongoId}">
+          <button type="button" class="btn btn-sm btn-outline-secondary text-danger px-2 py-1 fw-bold trigger-delete-btn" data-id="${mongoId}" title="Delete Cluster">
             <i class="bi bi-trash-fill"></i>
           </button>
         </div>
       `;
 
+      let badgeColor = 'warning';
+      if (clusterWorkingStatus === 'Active' || clusterWorkingStatus === 'Verified') badgeColor = 'success';
+      else if (clusterWorkingStatus === 'Restricted' || clusterWorkingStatus === 'Rejected') badgeColor = 'danger';
+
       return `
         <tr>
+          <!-- Column 1: Cluster ID -->
           <td>
-            <div class="small">
-              <span class="text-muted">Owner ID:</span> <strong>${ownerId}</strong> 
-              <span class="copy-btn ms-1" onclick="copyToClipboard('${ownerId}', this)" title="Copy Owner ID"><i class="bi bi-clipboard"></i></span>
-            </div>
-            <div class="small mt-1">
-              <span class="text-muted">MongoDB ID:</span> <span class="font-monospace">${mongoId.substring(mongoId.length - 8)}...</span>
-              <span class="copy-btn ms-1" onclick="copyToClipboard('${mongoId}', this)" title="Copy Full ID"><i class="bi bi-clipboard"></i></span>
-            </div>
+            <div class="font-monospace text-dark small">${mongoId}</div>
+            <span class="copy-btn mt-1 d-inline-block" onclick="copyToClipboard('${mongoId}', this)" title="Copy Cluster ID"><i class="bi bi-clipboard"></i> Copy</span>
           </td>
+          <!-- Column 2: Owner ID -->
+          <td>
+            <div class="fw-bold text-primary">${ownerId}</div>
+            <span class="copy-btn mt-1 d-inline-block" onclick="copyToClipboard('${ownerId}', this)" title="Copy Owner ID"><i class="bi bi-clipboard"></i> Copy</span>
+          </td>
+          <!-- Column 3: Owner Details & Credentials -->
           <td>
             <div class="fw-bold"><i class="bi bi-person-fill text-primary"></i> ${ownerName}</div>
             <div class="small text-secondary"><i class="bi bi-envelope-fill"></i> ${ownerEmail}</div>
-            <div class="small text-muted"><i class="bi bi-card-text"></i> PAN: ${pan}</div>
+            <div class="small text-dark fw-bold mt-1">
+              <i class="bi bi-key-fill text-warning"></i> Pass: <span class="font-monospace">${ownerPassword}</span>
+              <span class="copy-btn ms-1" onclick="copyToClipboard('${ownerPassword}', this)" title="Copy Password"><i class="bi bi-clipboard"></i></span>
+            </div>
           </td>
+          <!-- Column 4: Location & PAN -->
           <td>
-            <div><i class="bi bi-geo-alt-fill text-danger"></i> ${city}, ${state}</div>
+            <div class="small fw-bold"><i class="bi bi-geo-alt-fill text-danger"></i> ${city}, ${state}</div>
+            <div class="small text-muted mt-1"><i class="bi bi-card-text"></i> PAN: <span class="font-monospace text-dark">${pan}</span></div>
           </td>
+          <!-- Column 5: Capacity -->
           <td><strong>${capacity}</strong> Vehicles</td>
+          <!-- Column 6: Cluster Status -->
           <td>
-            <span class="badge bg-${clusterWorkingStatus === 'Active' || clusterWorkingStatus === 'Working' ? 'success' : 'warning'} text-dark">
+            <span class="badge bg-${badgeColor} text-dark">
               <i class="bi bi-activity"></i> ${clusterWorkingStatus}
             </span>
           </td>
+          <!-- Column 7: KYC Status -->
           <td>
             <span class="badge bg-${kycStatus === 'Verified' ? 'success' : 'secondary'}">
               <i class="bi bi-shield-check"></i> ${kycStatus}
             </span>
           </td>
-          <td><span class="small text-muted"><i class="bi bi-clock"></i> ${formattedDate}</span></td>
+          <!-- Column 8: Actions -->
           <td class="text-end">${actionsHtml}</td>
         </tr>
       `;
@@ -363,4 +434,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (searchBtn) searchBtn.addEventListener("click", fetchAndRenderClusters);
   if (refreshBtn) refreshBtn.addEventListener("click", fetchAndRenderClusters);
+  if (statusFilter) statusFilter.addEventListener("change", fetchAndRenderClusters);
 });

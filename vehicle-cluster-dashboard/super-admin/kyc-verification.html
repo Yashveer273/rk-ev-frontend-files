@@ -20,6 +20,10 @@
       border-bottom-left-radius: 8px;
       border-bottom-right-radius: 8px;
     }
+    .kyc-tab-btn {
+      font-weight: 600;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -34,26 +38,39 @@
 
       <div class="content-body p-4">
         
-        <!-- 🔍 SEARCH & RELOAD BAR -->
+        <!-- HEADER STATUS TABS -->
+        <div class="d-flex flex-wrap gap-2 mb-4" id="kycStatusTabs">
+          <button type="button" class="btn btn-warning kyc-tab-btn active px-4" data-status="Pending">
+            <i class="bi bi-clock-history me-1"></i> Pending KYC
+          </button>
+          <button type="button" class="btn btn-outline-success kyc-tab-btn px-4" data-status="Verified">
+            <i class="bi bi-check-circle-fill me-1"></i> Verified / Completed
+          </button>
+          <button type="button" class="btn btn-outline-danger kyc-tab-btn px-4" data-status="Rejected">
+            <i class="bi bi-x-circle-fill me-1"></i> Rejected KYC
+          </button>
+        </div>
+
+        <!-- SEARCH & RELOAD BAR -->
         <div class="operation-card mb-4">
           <div class="row g-3 align-items-center">
             <div class="col-md-8">
-              <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search by Owner Name, Email, ID or City..." />
+              <input type="text" id="searchInput" class="form-control" placeholder="Search by Owner Name, Email, ID or City..." />
             </div>
             <div class="col-md-4 text-end">
-              <button type="button" id="reloadPendingBtn" class="btn btn-outline-secondary w-100 fw-bold">
-                <i class="bi bi-arrow-clockwise"></i> <span id="reloadBtnText">Refresh Requests</span>
+              <button type="button" id="reloadKycBtn" class="btn btn-outline-secondary w-100 fw-bold">
+                <i class="bi bi-arrow-clockwise"></i> <span id="reloadBtnText">Refresh List</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 📊 CRM TABLE WITH PAGINATION -->
+        <!-- CRM TABLE WITH PAGINATION -->
         <div class="operation-card p-0 overflow-hidden shadow-sm">
           <div class="p-4 pb-3 d-flex justify-content-between align-items-center bg-white border-bottom">
             <div>
-              <h5 class="m-0 fw-bold text-dark"><i class="bi bi-shield-shaded text-success"></i> Pending KYC Requests</h5>
-              <p class="text-muted small mb-0">Review and verify cluster registrations submitted by owners.</p>
+              <h5 class="m-0 fw-bold text-dark" id="tableTitle"><i class="bi bi-shield-shaded text-warning"></i> Pending KYC Requests</h5>
+              <p class="text-muted small mb-0" id="tableSubtitle">Review cluster registrations where KYC submission fields are filled and pending review.</p>
             </div>
           </div>
 
@@ -62,16 +79,17 @@
               <thead>
                 <tr>
                   <th>Owner ID / Name</th>
-                  <th>Contact & PAN</th>
+                  <th>Contact & KYC ID</th>
                   <th>Location (City/State)</th>
-                  <th>Capacity</th>
+                  <th>Document Link</th>
+                  <th>Pan</th>
                   <th>Submission Date</th>
-                  <th class="text-end">Actions</th>
+                  <th class="text-end" id="actionHeader">Actions</th>
                 </tr>
               </thead>
               <tbody id="kycTableRows">
                 <tr>
-                  <td colspan="6" class="text-center py-4 text-muted">Loading pending requests...</td>
+                  <td colspan="6" class="text-center py-4 text-muted">Loading requests...</td>
                 </tr>
               </tbody>
             </table>
@@ -92,23 +110,22 @@
   <!-- Core Scripts -->
   <script src="../js/config-manager.js"></script>
   <script src="../js/api.js"></script>
-  <script src="../js/cluster-queries-api.js"></script>
   <script src="../js/super-admin-api.js"></script>
-  <script src="../js/js2/super-admin-actions.js"></script>
   
   <script>
-    // Load Sidebar Component
     fetch('../components/sidebar.html').then(res => res.text()).then(html => {
       document.getElementById('sidebar-container').innerHTML = html;
       document.querySelector('[data-page="kyc-verification"]')?.classList.add('active');
     });
 
-    let allPendingCache = [];
+    let currentActiveStatus = "Pending"; 
     let currentPage = 1;
     const rowsPerPage = 5;
+    let totalPagesCache = 1;
+    let totalItemsCache = 0;
 
     function setReloadButtonLoading(isLoading) {
-      const reloadBtn = document.getElementById("reloadPendingBtn");
+      const reloadBtn = document.getElementById("reloadKycBtn");
       const btnText = document.getElementById("reloadBtnText");
       if (!reloadBtn || !btnText) return;
 
@@ -117,41 +134,33 @@
         btnText.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Loading...`;
       } else {
         reloadBtn.disabled = false;
-        btnText.innerHTML = `Refresh Requests`;
+        btnText.innerHTML = `Refresh List`;
       }
     }
 
-    // Fetch Pending Clusters from API
-    async function fetchPendingKycList() {
+    async function fetchKycListByStatus() {
       const tbody = document.getElementById("kycTableRows");
       if (!tbody) return;
 
       setReloadButtonLoading(true);
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Fetching pending requests...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Fetching ${currentActiveStatus.toLowerCase()} requests...</td></tr>`;
 
       try {
-        const res = await ClusterQueryAPI.getClustersByKycStatus();
+        // Fresh API call for the selected status with pagination parameters
+        const res = await SuperAdminAPI.getAllKycRequests(currentActiveStatus, currentPage, rowsPerPage);
         
         let clusters = [];
-        if (res?.data) {
-          if (Array.isArray(res.data)) {
-            clusters = res.data;
-          } else if (res.data.pending && Array.isArray(res.data.pending)) {
-            clusters = res.data.pending;
-          }
+        if (res?.data && Array.isArray(res.data)) {
+          clusters = res.data;
+          totalPagesCache = res.totalPages || 1;
+          totalItemsCache = res.totalItems || clusters.length;
         } else if (Array.isArray(res)) {
           clusters = res;
-        } else if (res?.pending && Array.isArray(res.pending)) {
-          clusters = res.pending;
+          totalItemsCache = clusters.length;
+          totalPagesCache = Math.ceil(totalItemsCache / rowsPerPage) || 1;
         }
 
-        allPendingCache = clusters.filter(c => {
-          const status = c.kyc?.kycStatus || c.kycStatus;
-          return !status || status === 'Pending' || status === 'pending';
-        });
-
-        currentPage = 1;
-        renderKycTable();
+        renderKycTable(clusters);
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Failed to load requests: ${err.message}</td></tr>`;
       } finally {
@@ -159,18 +168,24 @@
       }
     }
 
-    // Render Table with Search Filter and Pagination
-    function renderKycTable() {
+    function renderKycTable(clusters) {
       const tbody = document.getElementById("kycTableRows");
       const searchInput = document.getElementById("searchInput");
       const paginationInfo = document.getElementById("paginationInfo");
       const paginationControls = document.getElementById("paginationControls");
+      const actionHeader = document.getElementById("actionHeader");
       if (!tbody) return;
+
+      if (currentActiveStatus === 'Verified') {
+        actionHeader.style.display = "none";
+      } else {
+        actionHeader.style.display = "";
+        actionHeader.className = "text-end";
+      }
 
       const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
-      // Filter Data based on Search Query
-      const filteredData = allPendingCache.filter(c => {
+      const filteredData = clusters.filter(c => {
         const ownerName = (c.vehicleClusterDetails?.ownerName || c.vehicleClusterOwnerName || "").toLowerCase();
         const ownerId = (c.vehicleClusterOwnerId || "").toLowerCase();
         const email = (c.vehicleClusterDetails?.email || "").toLowerCase();
@@ -178,54 +193,36 @@
         return ownerName.includes(searchTerm) || ownerId.includes(searchTerm) || email.includes(searchTerm) || city.includes(searchTerm);
       });
 
-      const totalItems = filteredData.length;
-      const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
-
-      if (currentPage > totalPages) currentPage = totalPages;
-      if (currentPage < 1) currentPage = 1;
-
-      const startIdx = (currentPage - 1) * rowsPerPage;
-      const endIdx = Math.min(startIdx + rowsPerPage, totalItems);
-      const paginatedItems = filteredData.slice(startIdx, endIdx);
-
-      if (paginatedItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No pending KYC records found.</td></tr>`;
+      if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No ${currentActiveStatus.toLowerCase()} KYC requests found.</td></tr>`;
         if (paginationInfo) paginationInfo.textContent = "Showing 0-0 of 0 requests";
         if (paginationControls) paginationControls.innerHTML = "";
         return;
       }
 
-      // Render Rows
-      tbody.innerHTML = paginatedItems.map(c => {
-        const clusterId = c._id;
+      const startIdx = (currentPage - 1) * rowsPerPage;
+      const endIdx = startIdx + filteredData.length;
+
+      tbody.innerHTML = filteredData.map(c => {
+        const clusterId = c._id || c.vehicleClusterOwnerId;
         const ownerId = c.vehicleClusterOwnerId || "N/A";
         const ownerName = c.vehicleClusterDetails?.ownerName || c.vehicleClusterOwnerName || "Unknown";
         const email = c.vehicleClusterDetails?.email || "N/A";
-        const pan = c.vehicleClusterDetails?.pan || "N/A";
+        const kycId = c.kyc?.kycId || "N/A";
+        const pan = c.kyc?.pan || "N/A";
+        const documentUrl = c.kyc?.documentUrl || "#";
         const city = c.vehicleClusterLocation?.city || "N/A";
         const state = c.vehicleClusterLocation?.state || "N/A";
-        const capacity = c.vehicleCapacity || 0;
         
-        // Format Date & Time cleanly
         let formattedDate = "N/A";
-        if (c.createdAt) {
-          const dateObj = new Date(c.createdAt);
+        if (c.kyc?.submittedAt || c.createdAt) {
+          const dateObj = new Date(c.kyc?.submittedAt || c.createdAt);
           formattedDate = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        return `
-          <tr>
-            <td>
-              <strong>${ownerId}</strong><br>
-              <span class="text-secondary small">${ownerName}</span>
-            </td>
-            <td>
-              <span class="small d-block">📧 ${email}</span>
-              <span class="small text-muted">PAN: ${pan}</span>
-            </td>
-            <td>${city}, ${state}</td>
-            <td>${capacity} Vehicles</td>
-            <td><span class="small text-muted"><i class="bi bi-clock"></i> ${formattedDate}</span></td>
+        let actionColumnHtml = '';
+        if (currentActiveStatus === 'Pending') {
+          actionColumnHtml = `
             <td class="text-end">
               <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-sm btn-success fw-bold px-3 py-1 execute-kyc-btn" data-id="${clusterId}" data-status="Verified">
@@ -236,11 +233,48 @@
                 </button>
               </div>
             </td>
+          `;
+        } else if (currentActiveStatus === 'Rejected') {
+          actionColumnHtml = `
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-success fw-bold px-3 py-1 execute-kyc-btn" data-id="${clusterId}" data-status="Verified">
+                <i class="bi bi-arrow-repeat"></i> Re-Verify
+              </button>
+            </td>
+          `;
+        } else {
+          actionColumnHtml = '';
+        }
+
+        return `
+          <tr>
+            <td>
+              <strong>${ownerId}</strong><br>
+              <span class="text-secondary small">${ownerName}</span>
+            </td>
+            <td>
+              <span class="small d-block"><i class="bi bi-envelope"></i> ${email}</span>
+              <span class="small text-muted font-monospace">ID: ${kycId}</span>
+            </td>
+            <td>${city}, ${state}</td>
+            <td>
+              <a href="${documentUrl}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2">
+                <i class="bi bi-file-earmark-image"></i> View Doc
+              </a>
+             
+            </td>
+              <td>
+              
+              <span class="small text-muted font-monospace">No. ${pan}</span>
+          
+            </td>
+            <td><span class="small text-muted"><i class="bi bi-clock"></i> ${formattedDate}</span></td>
+            ${actionColumnHtml}
           </tr>
         `;
       }).join("");
 
-      // Attach Click Event to Verify / Reject Buttons inside rows
+      // Verify/Reject action button click listener
       document.querySelectorAll(".execute-kyc-btn").forEach(btn => {
         btn.addEventListener("click", async function() {
           const targetId = this.getAttribute("data-id");
@@ -254,11 +288,11 @@
             await SuperAdminAPI.verifyKyc(targetId, targetStatus);
 
             if (msgBox) {
-              msgBox.innerHTML = `<div class="alert alert-success py-2">Cluster KYC successfully <strong>${targetStatus}</strong>!</div>`;
+              msgBox.innerHTML = `<div class="alert alert-success py-2">Cluster KYC successfully updated to <strong>${targetStatus}</strong>!</div>`;
             }
 
-            // Refresh table list immediately so it removes from pending list
-            await fetchPendingKycList();
+            // Refresh current list after status update
+            await fetchKycListByStatus();
           } catch (error) {
             if (msgBox) {
               msgBox.innerHTML = `<div class="alert alert-danger py-2">Error: ${error.message}</div>`;
@@ -268,9 +302,8 @@
         });
       });
 
-      // Pagination Controls
       if (paginationInfo) {
-        paginationInfo.textContent = `Showing ${totalItems > 0 ? startIdx + 1 : 0}-${endIdx} of ${totalItems} requests`;
+        paginationInfo.textContent = `Showing ${totalItemsCache > 0 ? startIdx + 1 : 0}-${endIdx} of ${totalItemsCache} requests`;
       }
 
       if (paginationControls) {
@@ -280,7 +313,7 @@
           </li>
         `;
 
-        for (let i = 1; i <= totalPages; i++) {
+        for (let i = 1; i <= totalPagesCache; i++) {
           pagesHtml += `
             <li class="page-item ${currentPage === i ? 'active' : ''}">
               <a class="page-link" href="#" data-page="${i}">${i}</a>
@@ -289,7 +322,7 @@
         }
 
         pagesHtml += `
-          <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+          <li class="page-item ${currentPage === totalPagesCache ? 'disabled' : ''}">
             <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
           </li>
         `;
@@ -300,9 +333,9 @@
           link.addEventListener("click", function(e) {
             e.preventDefault();
             const targetPage = parseInt(this.getAttribute("data-page"));
-            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPages) {
+            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPagesCache) {
               currentPage = targetPage;
-              renderKycTable();
+              fetchKycListByStatus();
             }
           });
         });
@@ -310,19 +343,41 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      fetchPendingKycList();
+      // Tab Switching Logic
+      document.querySelectorAll("#kycStatusTabs button").forEach(btn => {
+        btn.addEventListener("click", function() {
+          document.querySelectorAll("#kycStatusTabs button").forEach(b => {
+            b.classList.remove("active", "btn-warning", "btn-success", "btn-danger");
+            b.classList.add("btn-outline-secondary");
+          });
+
+          this.classList.remove("btn-outline-secondary");
+          currentActiveStatus = this.getAttribute("data-status");
+          currentPage = 1; // Reset to page 1 on tab switch
+
+          if (currentActiveStatus === 'Pending') this.classList.add("active", "btn-warning");
+          else if (currentActiveStatus === 'Verified') this.classList.add("active", "btn-success");
+          else if (currentActiveStatus === 'Rejected') this.classList.add("active", "btn-danger");
+
+          document.getElementById("tableTitle").innerHTML = `<i class="bi bi-shield-shaded text-${currentActiveStatus === 'Verified' ? 'success' : currentActiveStatus === 'Rejected' ? 'danger' : 'warning'}"></i> ${currentActiveStatus} KYC Requests`;
+          
+          fetchKycListByStatus();
+        });
+      });
+
+      fetchKycListByStatus();
 
       const searchInput = document.getElementById("searchInput");
       if (searchInput) {
         searchInput.addEventListener("input", () => {
           currentPage = 1;
-          renderKycTable();
+          fetchKycListByStatus();
         });
       }
 
-      const reloadBtn = document.getElementById("reloadPendingBtn");
+      const reloadBtn = document.getElementById("reloadKycBtn");
       if (reloadBtn) {
-        reloadBtn.addEventListener("click", fetchPendingKycList);
+        reloadBtn.addEventListener("click", fetchKycListByStatus);
       }
     });
   </script>

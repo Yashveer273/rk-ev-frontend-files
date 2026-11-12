@@ -61,19 +61,37 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../js/config-manager.js"></script>
+ <script src="../js/config-manager.js"></script>
   <script src="../js/api.js"></script>
-  <script src="../js/cluster-queries-api.js"></script>
-  <script src="../js/super-admin-api.js"></script>
+  <script src="../js/cluster-owner-api.js"></script>
+  <script src="../js/js2/owner-actions.js"></script>
+  <script src="../js/js2/owner-auth-guard.js"></script>
+  
   <script>
-    // Load Sidebar Component dynamically or via fetch
-    fetch('../components/sidebar.html')
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById('sidebar-container').innerHTML = html;
-        // Set active link for dashboard
-        document.querySelector('[data-page="dashboard"]')?.classList.add('active');
-      });
+    // Sidebar load fetch
+    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
+      document.getElementById('sidebar-container').innerHTML = html;
+      document.querySelector('[data-page="owner-dashboard"]')?.classList.add('active');
+    });
+
+    // Strict KYC Check: अगर KYC verified नहीं है, तो सीधे Submit KYC पेज पर भेजें
+    async function enforceKycCompletion() {
+      const ownerId = localStorage.getItem("currentClusterOwnerId");
+      if (!ownerId) return;
+      try {
+        const res = await window.ClusterAPI.request("GET", `/${encodeURIComponent(ownerId)}`, null, { "x-owner-id": ownerId });
+        const cluster = res?.data || res;
+        const kycStatus = cluster?.kyc?.kycStatus;
+        
+        if (!kycStatus || kycStatus !== "Verified") {
+          alert("Please complete your KYC verification first before accessing Cluster Info & Vehicle Operators.");
+          window.location.href = "kyc-submission.html";
+        }
+      } catch (e) {
+        console.error("KYC Check Error:", e);
+      }
+    }
+    enforceKycCompletion();
   </script>
 </body>
 </html>

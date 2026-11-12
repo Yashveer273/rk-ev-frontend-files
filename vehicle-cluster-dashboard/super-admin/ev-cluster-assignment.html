@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cluster EV Allocation - Super Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <style>
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+    .metric-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .metric-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 4px;
+    }
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+    }
+    .btn-dark-custom {
+      background-color: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+    }
+    .btn-dark-custom:hover {
+      background-color: #1e293b;
+      border-color: #1e293b;
+      color: #ffffff;
+    }
+    .copy-id {
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .copy-id:hover {
+      opacity: 0.7;
+      text-decoration: underline;
+    }
+    .selection-pill {
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .carousel-item img {
+      height: 380px;
+      object-fit: contain;
+      background-color: #0f172a;
+      border-radius: 6px;
+    }
+    .form-label-clean {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar px-4 py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+          <a href="cluster-management.html" class="btn btn-outline-dark btn-sm fw-bold">
+            <i class="bi bi-arrow-left"></i> Back
+          </a>
+          <div>
+            <h1 class="page-title fs-4 m-0">Cluster EV Allocation</h1>
+          </div>
+        </div>
+        <div class="role-badge">Super Admin</div>
+      </header>
+
+      <div class="content-body p-4">
+
+        <!-- CLUSTER CAPACITY & ALLOCATION METRICS -->
+        <div class="row g-3 mb-4" id="clusterMetricsRow">
+          <div class="col-md-4">
+            <div class="metric-card">
+              <div class="metric-label">Target Cluster ID</div>
+              <div class="metric-value font-monospace fs-6 pt-1 d-flex align-items-center justify-content-between">
+                <span id="displayClusterId">All Clusters</span>
+                <button type="button" id="copyClusterIdBtn" class="btn btn-sm btn-outline-dark py-0 px-2 d-none" onclick="copyFullClusterId(this)" title="Copy Full ID">
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="metric-card">
+              <div class="metric-label">Maximum Fleet Capacity</div>
+              <div class="metric-value" id="displayMaxCapacity">0 Vehicles</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="metric-card">
+              <div class="metric-label">Assigned & Available Slots</div>
+              <div class="metric-value fs-6 pt-1" id="displayAssignedCount">0 Assigned / 0 Available</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CLEAN UNIFIED SEARCH & PARAMETER BAR (Aligned Top) -->
+        <div class="operation-card mb-4">
+          <div class="row g-3 align-items-start">
+            
+            <!-- Fleet View -->
+            <div class="col-md-3">
+              <label class="form-label form-label-clean">Fleet View</label>
+              <select id="typeFilter" class="form-select" onchange="handleTypeChange()">
+                <option value="free" selected>Available (Unassigned)</option>
+                <option value="cluster">This Cluster Assigned Evs</option>
+                <option value="assigned">Assigned (All Clusters)</option>
+                <option value="all">Complete Inventory</option>
+              </select>
+            </div>
+
+            <!-- Conditional Source Cluster ID Input (Clean, inline) -->
+            <div class="col-md-3 d-none" id="clusterIdInputWrapper">
+              <label class="form-label form-label-clean">Source Cluster ID</label>
+              <input type="text" id="searchClusterIdInput" class="form-control font-monospace" placeholder="Enter Cluster ID" oninput="clearClusterInputError()" />
+              <div class="invalid-feedback" id="clusterInputError">Invalid Cluster ID</div>
+            </div>
+
+            <!-- Vehicle Status -->
+            <div class="col-md-3" id="statusFilterCol">
+              <label class="form-label form-label-clean">Vehicle Status</label>
+              <select id="statusFilter" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="In-service">In-service</option>
+                <option value="In Parking">In Parking</option>
+                <option value="Non-active">Non-active</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+
+            <!-- Max EVs & Search Button (Always top-aligned, never drops down) -->
+            <div class="col-md-3 ms-auto" id="batchSearchCol">
+              <label class="form-label form-label-clean">Max EVs (Limit: 30)</label>
+              <div class="input-group">
+                <input type="number" id="batchCountInput" class="form-control" value="30" min="1" max="30" />
+                <button type="button" id="searchFleetBtn" class="btn btn-dark-custom fw-bold px-3">
+                  <i class="bi bi-search"></i> Search
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- VEHICLE INVENTORY TABLE -->
+        <div class="operation-card p-0 overflow-hidden">
+          <div class="p-4 pb-3 d-flex justify-content-between align-items-center border-bottom flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+              <h5 class="m-0 fw-bold"><i class="bi bi-ev-front"></i> Fleet Inventory</h5>
+              <span class="badge bg-light text-dark border px-3 py-2" id="totalRecordsBadge">Total: 0</span>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+              <div class="selection-pill">
+                <span>Selected to Assign:</span>
+                <strong id="selectedBatchCount" class="font-monospace">0</strong>
+              </div>
+              <button type="button" id="submitBatchBtn" class="btn btn-sm btn-dark-custom fw-bold px-3 py-2 d-none" onclick="submitAssignedBatch()">
+                <i class="bi bi-check2-circle"></i> Confirm Assignment
+              </button>
+            </div>
+          </div>
+
+          <div class="operator-table-wrapper border-0 rounded-0">
+            <table class="operator-table m-0">
+              <thead>
+                <tr>
+                  <th>Vehicle ID & Plate</th>
+                  <th>Model & Category</th>
+                  <th>Manufacturer</th>
+                  <th>Specifications</th>
+                  <th>Operational Status</th>
+                  <th>Cluster Assignment</th>
+                  <th class="text-center">Gallery</th>
+                  <th class="text-end">Allocation</th>
+                </tr>
+              </thead>
+              <tbody id="evTableBody">
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">Loading fleet inventory...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="pagination-container">
+            <span class="text-muted small" id="paginationInfo">Showing 0-0 of 0 vehicles</span>
+            <ul class="pagination pagination-sm m-0" id="paginationControls"></ul>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- EV MEDIA GALLERY MODAL (VIEW ONLY) -->
+  <div class="modal fade" id="evImageModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title fs-6"><i class="bi bi-images me-2"></i> EV Media Gallery: <span id="modalVehiclePlate" class="fw-bold"></span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div id="evImageCarouselContainer">
+            <div class="text-center py-5 text-muted">Loading media...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/evFleetApiClient.js"></script>
+
+  <script>
+    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
+      document.getElementById('sidebar-container').innerHTML = html;
+      document.querySelector('[data-page="cluster-management"]')?.classList.add('active');
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetClusterId = urlParams.get('clusterId') || '';
+    const maxCapacity = parseInt(urlParams.get('capacity'), 10) || 0;
+
+    let currentAssignedCount = 0;
+    let currentPage = 1;
+    let currentLimit = 30;
+    let totalPages = 1;
+    let loadedVehiclesCache = [];
+    let totalRecordsCache = 0;
+    
+    let assignedBatchCart = new Map();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      initializeClusterHeader();
+      handleTypeChange();
+      await syncClusterAssignedCount();
+      loadFleetVehicles();
+
+      document.getElementById('searchFleetBtn').addEventListener('click', () => {
+        currentPage = 1;
+        currentLimit = getValidatedBatchLimit();
+        loadFleetVehicles();
+      });
+    });
+
+    function getValidatedBatchLimit() {
+      const inputEl = document.getElementById('batchCountInput');
+      let val = parseInt(inputEl.value, 10);
+      if (isNaN(val) || val < 1) val = 30;
+      if (val > 30) {
+        val = 30;
+        inputEl.value = 30;
+      }
+      return val;
+    }
+
+    function initializeClusterHeader() {
+      if (targetClusterId) {
+        const shortId = targetClusterId.length > 14 ? targetClusterId.substring(0, 10) + '...' : targetClusterId;
+        document.getElementById('displayClusterId').textContent = shortId;
+        document.getElementById('copyClusterIdBtn').classList.remove('d-none');
+        document.getElementById('displayMaxCapacity').textContent = `${maxCapacity} Vehicles`;
+      } else {
+        document.getElementById('displayClusterId').textContent = 'General View';
+        document.getElementById('displayMaxCapacity').textContent = 'N/A';
+        document.getElementById('displayAssignedCount').textContent = 'N/A';
+      }
+    }
+
+    // Dynamically adjust grid columns so controls stay in a clean, single horizontal row
+    window.handleTypeChange = function () {
+      const type = document.getElementById('typeFilter').value;
+      const wrapper = document.getElementById('clusterIdInputWrapper');
+      const statusCol = document.getElementById('statusFilterCol');
+      const batchCol = document.getElementById('batchSearchCol');
+
+      clearClusterInputError();
+
+      if (type === 'cluster') {
+        wrapper.classList.remove('d-none');
+        statusCol.className = 'col-md-3';
+        batchCol.className = 'col-md-3';
+      } else {
+        wrapper.classList.add('d-none');
+        statusCol.className = 'col-md-4';
+        batchCol.className = 'col-md-5';
+        const input = document.getElementById('searchClusterIdInput');
+        if (input) input.value = '';
+      }
+    };
+
+    window.clearClusterInputError = function () {
+      const inputEl = document.getElementById('searchClusterIdInput');
+      if (inputEl) inputEl.classList.remove('is-invalid');
+    };
+
+    function showClusterInputError(message) {
+      const inputEl = document.getElementById('searchClusterIdInput');
+      const errorEl = document.getElementById('clusterInputError');
+      if (inputEl && errorEl) {
+        errorEl.textContent = message;
+        inputEl.classList.add('is-invalid');
+        inputEl.focus();
+      }
+    }
+
+    window.copyFullClusterId = function (btnEl) {
+      if (!targetClusterId) return;
+      navigator.clipboard.writeText(targetClusterId).then(() => {
+        const original = btnEl.innerHTML;
+        btnEl.innerHTML = `<i class="bi bi-check2"></i>`;
+        setTimeout(() => { btnEl.innerHTML = original; }, 1200);
+      });
+    };
+
+    async function syncClusterAssignedCount() {
+      if (!targetClusterId) return;
+      try {
+        const res = await window.EVFleetService.getEvsByCases({
+          type: 'cluster',
+          clusterId: targetClusterId,
+          page: 1,
+          limit: 1
+        });
+        if (res.success) {
+          currentAssignedCount = res.totalRecords || 0;
+          updateCapacityDisplay();
+        }
+      } catch (err) {
+        console.error('Failed to sync cluster count:', err);
+      }
+    }
+
+    function updateCapacityDisplay() {
+      if (!targetClusterId) return;
+      const effectiveAssigned = currentAssignedCount + assignedBatchCart.size;
+      const remaining = Math.max(0, maxCapacity - effectiveAssigned);
+      document.getElementById('displayAssignedCount').textContent = `${effectiveAssigned} Assigned / ${remaining} Available`;
+    }
+
+    async function loadFleetVehicles() {
+      const type = document.getElementById('typeFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const tbody = document.getElementById('evTableBody');
+
+      let searchClusterId = '';
+
+      // Clean inline frontend validation for 'cluster' view
+      if (type === 'cluster') {
+        const inputEl = document.getElementById('searchClusterIdInput');
+        searchClusterId = inputEl ? inputEl.value.trim() : '';
+
+        if (!searchClusterId) {
+          showClusterInputError('Cluster ID is required');
+          return;
+        }
+
+        if (targetClusterId && searchClusterId === targetClusterId) {
+          showClusterInputError('Must differ from Target Cluster ID');
+          return;
+        }
+      }
+
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Loading fleet inventory...</td></tr>`;
+
+      try {
+        const apiParams = {
+          type,
+          status,
+          page: currentPage,
+          limit: currentLimit
+        };
+
+        if (type === 'cluster') {
+          apiParams.clusterId = searchClusterId;
+        }
+
+        const result = await window.EVFleetService.getEvsByCases(apiParams);
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to load fleet inventory.');
+        }
+
+        loadedVehiclesCache = result.data || [];
+        totalRecordsCache = result.totalRecords || 0;
+        renderEvTable(loadedVehiclesCache, totalRecordsCache);
+        updatePagination(result.currentPage, result.totalPages, totalRecordsCache);
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${error.message}</td></tr>`;
+      }
+    }
+
+    function renderEvTable(vehicles, totalRecords) {
+      const tbody = document.getElementById('evTableBody');
+      document.getElementById('totalRecordsBadge').textContent = `Total: ${totalRecords || 0}`;
+
+      if (!vehicles || vehicles.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No vehicles found matching the search criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = vehicles.map((ev, index) => {
+        const assignedCluster = ev.associateCluster && ev.associateCluster.clusterId;
+        const isAssignedInCart = assignedBatchCart.has(ev.vehicleId);
+
+        const clusterBadge = assignedCluster
+          ? `<span class="badge bg-dark font-monospace">${assignedCluster}</span>`
+          : `<span class="badge bg-light text-dark border">Unassigned</span>`;
+
+        let statusBadgeClass = 'bg-secondary';
+        if (ev.status === 'Active') statusBadgeClass = 'bg-dark';
+        else if (ev.status === 'In-service') statusBadgeClass = 'bg-warning text-dark';
+        else if (ev.status === 'In Parking') statusBadgeClass = 'bg-light text-dark border';
+        else if (ev.status === 'Rejected' || ev.status === 'Non-active') statusBadgeClass = 'bg-danger';
+
+        const imgCount = Array.isArray(ev.vehicleImage) ? ev.vehicleImage.length : 0;
+        const galleryBtn = `
+          <button type="button" class="btn btn-sm btn-outline-dark px-2 py-1" onclick="openVehicleGalleryModal(${index})" title="View Media Gallery">
+            <i class="bi bi-images"></i> ${imgCount > 0 ? `(${imgCount})` : 'View'}
+          </button>
+        `;
+
+        const actionBtn = isAssignedInCart
+          ? `<button type="button" class="btn btn-sm btn-outline-danger fw-bold px-3" onclick="toggleCartAction('${ev.vehicleId}', '${ev._id || ''}', false)">Remove</button>`
+          : `<button type="button" class="btn btn-sm btn-dark-custom fw-bold px-3" onclick="toggleCartAction('${ev.vehicleId}', '${ev._id || ''}', true)" ${assignedCluster === targetClusterId && targetClusterId ? 'disabled' : ''}>Assign</button>`;
+
+        return `
+          <tr>
+            <td>
+              <div class="fw-bold text-dark font-monospace copy-id" onclick="copyVehicleId('${ev.vehicleId}', this)" title="Click to copy ID">
+                ${ev.vehicleId} <i class="bi bi-clipboard small text-muted"></i>
+              </div>
+              <div class="small text-muted font-monospace">${ev.vehicleNoPlate || '-'}</div>
+            </td>
+            <td>
+              <div class="fw-bold">${ev.vehicleModelName || '-'}</div>
+              <div class="small text-muted">${ev.vehicleType || '-'} (${ev.vehicleYearModel || '-'})</div>
+            </td>
+            <td>${ev.companyData?.companyName || '-'}</td>
+            <td>
+              <div class="small"><strong>${ev.rangeKm || 0} km</strong> Range</div>
+              <div class="small text-muted">${ev.batteryCapacityKwh || 0} kWh</div>
+            </td>
+            <td><span class="badge ${statusBadgeClass}">${ev.status}</span></td>
+            <td>${clusterBadge}</td>
+            <td class="text-center">${galleryBtn}</td>
+            <td class="text-end">${actionBtn}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.openVehicleGalleryModal = function (vehicleIndex) {
+      const ev = loadedVehiclesCache[vehicleIndex];
+      if (!ev) return;
+
+      document.getElementById('modalVehiclePlate').textContent = `${ev.vehicleNoPlate || ev.vehicleId} (${ev.vehicleModelName || 'EV'})`;
+      renderGalleryCarousel(ev.vehicleImage || []);
+
+      const modal = new bootstrap.Modal(document.getElementById('evImageModal'));
+      modal.show();
+    };
+
+    function renderGalleryCarousel(images) {
+      const container = document.getElementById('evImageCarouselContainer');
+
+      if (!images || images.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-5 bg-light rounded border">
+            <i class="bi bi-image text-muted fs-1 d-block mb-2"></i>
+            <span class="text-muted small">No images available for this vehicle.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const indicatorsHtml = images.map((_, idx) => `
+        <button type="button" data-bs-target="#evMediaSlider" data-bs-slide-to="${idx}" class="${idx === 0 ? 'active' : ''}" aria-current="${idx === 0 ? 'true' : 'false'}"></button>
+      `).join('');
+
+      const slidesHtml = images.map((img, idx) => `
+        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+          <img src="${img.imgurl}" class="d-block w-100" alt="${img.angle || 'Vehicle Angle'}" onerror="this.src='https://placehold.co/800x400/0f172a/ffffff?text=Image+Unavailable'">
+          <div class="carousel-caption bg-dark bg-opacity-75 px-3 py-1 rounded d-inline-block">
+            <span class="small fw-bold text-uppercase">${img.angle || 'Angle View'}</span>
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = `
+        <div id="evMediaSlider" class="carousel slide" data-bs-ride="false">
+          <div class="carousel-indicators">${indicatorsHtml}</div>
+          <div class="carousel-inner rounded overflow-hidden">${slidesHtml}</div>
+          ${images.length > 1 ? `
+            <button class="carousel-control-prev" type="button" data-bs-target="#evMediaSlider" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#evMediaSlider" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    window.copyVehicleId = function (vehicleId, el) {
+      navigator.clipboard.writeText(vehicleId).then(() => {
+        const originalHtml = el.innerHTML;
+        el.innerHTML = `<span class="text-dark fw-bold"><i class="bi bi-check2"></i> Copied</span>`;
+        setTimeout(() => { el.innerHTML = originalHtml; }, 1200);
+      });
+    };
+
+    window.toggleCartAction = function (vehicleId, objectId, shouldAssign) {
+      if (!targetClusterId) {
+        return;
+      }
+
+      if (shouldAssign) {
+        const remaining = maxCapacity > 0 ? maxCapacity - (currentAssignedCount + assignedBatchCart.size) : 30;
+        if (maxCapacity > 0 && remaining <= 0) {
+          return;
+        }
+
+        assignedBatchCart.set(vehicleId, { vehicleId, objectId: objectId || null });
+      } else {
+        assignedBatchCart.delete(vehicleId);
+      }
+
+      const cartCount = assignedBatchCart.size;
+      document.getElementById('selectedBatchCount').textContent = cartCount;
+      updateCapacityDisplay();
+
+      const submitBtn = document.getElementById('submitBatchBtn');
+      if (cartCount > 0) {
+        submitBtn.classList.remove('d-none');
+      } else {
+        submitBtn.classList.add('d-none');
+      }
+
+      renderEvTable(loadedVehiclesCache, totalRecordsCache);
+    };
+
+    window.submitAssignedBatch = function () {
+      if (!targetClusterId) return;
+
+      const payload = {
+        clusterId: targetClusterId,
+        vehicleIds: Array.from(assignedBatchCart.values()).map(item => item.vehicleId),
+        objectIds: Array.from(assignedBatchCart.values()).map(item => item.objectId)
+      };
+
+      console.log('[Submitting Cluster EV Allocation Payload]:', payload);
+    };
+
+    function updatePagination(page, totalPagesNum, totalRecords) {
+      currentPage = page;
+      totalPages = totalPagesNum || 1;
+      const startItem = totalRecords > 0 ? (currentPage - 1) * currentLimit + 1 : 0;
+      const endItem = Math.min(currentPage * currentLimit, totalRecords);
+
+      document.getElementById('paginationInfo').textContent = `Showing ${startItem}-${endItem} of ${totalRecords} vehicles`;
+
+      const paginationUl = document.getElementById('paginationControls');
+      let html = `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+          <a class="page-link" href="#" onclick="changePage(event, ${currentPage - 1})">Prev</a>
+        </li>
+      `;
+
+      for (let i = 1; i <= totalPages; i++) {
+        html += `
+          <li class="page-item ${currentPage === i ? 'active' : ''}">
+            <a class="page-link" href="#" onclick="changePage(event, ${i})">${i}</a>
+          </li>
+        `;
+      }
+
+      html += `
+        <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+          <a class="page-link" href="#" onclick="changePage(event, ${currentPage + 1})">Next</a>
+        </li>
+      `;
+
+      paginationUl.innerHTML = html;
+    }
+
+    window.changePage = function (event, targetPage) {
+      event.preventDefault();
+      if (targetPage >= 1 && targetPage <= totalPages) {
+        currentPage = targetPage;
+        loadFleetVehicles();
+      }
+    };
+  </script>
+</body>
+</html>

@@ -8,110 +8,219 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="../css/app.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    :root {
+      --navy-dark: #030514;
+      --navy-card: #090D26;
+      --border-subtle: #e2e8f0;
+    }
+    body { background-color: #f8fafc; color: #1e293b; font-family: system-ui, -apple-system, sans-serif; }
+    
+    .content-header-wrapper {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .form-main-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .card-modern {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .step-badge {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: #0f172a;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .section-header-custom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 10px;
+      margin-bottom: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control, .form-select {
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.9rem;
+      border-color: #cbd5e1;
+      background-color: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: #0f172a;
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+      background-color: #fff;
+    }
+
+    .role-badge-custom {
+      background: #f1f5f9;
+      color: #334155;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 1px solid #e2e8f0;
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard-layout">
-    <!-- Sidebar Component -->
+    <!-- Sidebar Component Container -->
     <div id="sidebar-container"></div>
 
     <main class="main-content">
-      <header class="topbar">
-        <h1 class="page-title text-dark fw-semibold fs-4">Register New Electric Vehicle</h1>
-        <div class="topbar-right d-flex align-items-center gap-3">
-          <a href="ev-fleet.html" class="btn btn-outline-dark btn-sm fw-medium">
-            <i class="bi bi-arrow-left me-1"></i> Back to Fleet
-          </a>
-          <div class="role-badge">Role: Super Admin</div>
+      <div class="content-header-wrapper">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-ev-front text-dark fs-4"></i>
+          <h1 class="page-title text-dark fw-bold fs-5 mb-0">Register New Electric Vehicle</h1>
         </div>
-      </header>
+        <div class="d-flex align-items-center gap-3">
+          <a href="ev-fleet.html" class="btn btn-outline-dark btn-sm fw-medium px-3 d-inline-flex align-items-center gap-1">
+            <i class="bi bi-arrow-left"></i> Back to Fleet
+          </a>
+          <div class="role-badge-custom">Super Admin</div>
+        </div>
+      </div>
 
-      <div class="content-body py-4" style="max-width: 1000px; margin: 0 auto;">
-        
-        <div class="card shadow-sm border-0 rounded-3">
+      <div class="form-main-container">
+        <div class="card card-modern">
           <div class="card-body p-4 p-md-5">
             <form id="createVehicleForm" class="needs-validation" novalidate>
               
               <!-- Section 1 -->
-              <h6 class="fw-bold mb-3 pb-2 border-bottom text-dark">1. Core Vehicle Information</h6>
+              <div class="section-header-custom">
+                <span class="step-badge">1</span>
+                <h6 class="fw-bold mb-0 text-uppercase text-dark" style="font-size: 0.85rem; letter-spacing: 0.04em;">Core Vehicle Information</h6>
+              </div>
               <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Service Count <span class="text-danger">*</span></label>
-                  <input type="number" min="0" id="createVehicleServiceNo" class="form-control" placeholder="e.g. 0, 1, 2..." required>
-                  <div class="form-text text-muted" style="font-size: 0.75rem;">Total times serviced</div>
+                <div class="col-md-3" title="Total number of completed vehicle services">
+                  <label class="form-label">Service Count <span class="text-danger">*</span> <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createVehicleServiceNo" class="form-control" placeholder="e.g. 0, 1..." required>
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Number Plate <span class="text-danger">*</span></label>
+                <div class="col-md-3" title="Official vehicle registration number plate">
+                  <label class="form-label">Number Plate <span class="text-danger">*</span> <i class="bi bi-info-circle text-muted"></i></label>
                   <input type="text" id="createVehicleNoPlate" class="form-control text-uppercase" placeholder="DL01EV1234" required>
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Vehicle Type <span class="text-danger">*</span></label>
+                <div class="col-md-3" title="Vehicle category type">
+                  <label class="form-label">Vehicle Type <span class="text-danger">*</span> <i class="bi bi-info-circle text-muted"></i></label>
                   <select id="createVehicleType" class="form-select" required>
-                    <option value="" disabled selected>Select category...</option>
-                    <option value="2-Wheeler">2-Wheeler</option>
+                    <option value="2-Wheeler" selected>2-Wheeler</option>
                     <option value="3-Wheeler">3-Wheeler</option>
                     <option value="4-Wheeler">4-Wheeler</option>
                   </select>
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Operational Status</label>
+                <div class="col-md-3" title="Initial fleet status (Set to Non-active until verification)">
+                  <label class="form-label">Operational Status <i class="bi bi-info-circle text-muted"></i></label>
                   <select id="createStatus" class="form-select">
+                    <option value="Non-active" selected>Non-active</option>
                     <option value="Active">Active</option>
                     <option value="In Parking">In Parking</option>
                     <option value="In-service">In-service</option>
-                    <option value="Non-active">Non-active</option>
                   </select>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-secondary">Model Name <span class="text-danger">*</span></label>
+                <div class="col-md-6" title="Model name of the electric vehicle">
+                  <label class="form-label">Model Name <span class="text-danger">*</span> <i class="bi bi-info-circle text-muted"></i></label>
                   <input type="text" id="createVehicleModelName" class="form-control" placeholder="e.g. Ather 450X" required>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-secondary">Year Model <span class="text-danger">*</span></label>
-                  <input type="number" id="createVehicleYearModel" class="form-control" value="2026" required>
+                <div class="col-md-6" title="Manufacturing model year (Restricted to current or past years)">
+                  <label class="form-label">Year Model <span class="text-danger">*</span> <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" id="createVehicleYearModel" class="form-control" min="2000" max="2026" value="2026" required>
                 </div>
               </div>
 
               <!-- Section 2 -->
-              <h6 class="fw-bold mb-3 pb-2 border-bottom text-dark">2. Technical Telemetry Specifications</h6>
+              <div class="section-header-custom">
+                <span class="step-badge">2</span>
+                <h6 class="fw-bold mb-0 text-uppercase text-dark" style="font-size: 0.85rem; letter-spacing: 0.04em;">Technical Telemetry Specifications</h6>
+              </div>
               <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Motor Power (kW)</label>
-                  <input type="number" step="0.1" id="createMotorPower" class="form-control" placeholder="e.g. 6.2">
+                <div class="col-md-3" title="Motor power output in Kilowatts (kW)">
+                  <label class="form-label">Motor Power (kW) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" step="0.1" min="0" id="createMotorPower" class="form-control" placeholder="e.g. 6.2">
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Battery Capacity (kWh)</label>
-                  <input type="number" step="0.1" id="createBatteryCapacity" class="form-control" placeholder="e.g. 3.7">
+                <div class="col-md-3" title="Battery storage capacity in Kilowatt-hours (kWh)">
+                  <label class="form-label">Battery Capacity (kWh) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" step="0.1" min="0" id="createBatteryCapacity" class="form-control" placeholder="e.g. 3.7">
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Max Range (KM)</label>
-                  <input type="number" id="createRangeKm" class="form-control" placeholder="e.g. 105">
+                <div class="col-md-3" title="Maximum driving range on single full charge (KM)">
+                  <label class="form-label">Max Range (KM) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createRangeKm" class="form-control" placeholder="e.g. 105">
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">Top Speed (km/h) <span class="text-danger">*</span></label>
-                  <input type="number" id="createTopSpeed" class="form-control" placeholder="e.g. 85" required>
+                <div class="col-md-3" title="Top speed capability (km/h)">
+                  <label class="form-label">Top Speed (km/h) <span class="text-danger">*</span> <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createTopSpeed" class="form-control" placeholder="e.g. 85" required>
                 </div>
               </div>
 
               <!-- Section 3 -->
-              <h6 class="fw-bold mb-3 pb-2 border-bottom text-dark">3. Commercial & Procurement Details</h6>
+              <div class="section-header-custom">
+                <span class="step-badge">3</span>
+                <h6 class="fw-bold mb-0 text-uppercase text-dark" style="font-size: 0.85rem; letter-spacing: 0.04em;">Commercial & Financial Metrics</h6>
+              </div>
               <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">Company Name</label>
+                <div class="col-md-6" title="Manufacturer / Brand company name">
+                  <label class="form-label">Company Name <i class="bi bi-info-circle text-muted"></i></label>
                   <input type="text" id="createCompanyName" class="form-control" placeholder="e.g. Ather Energy">
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">Purchase Location</label>
-                  <input type="text" id="createPurchaseLocation" class="form-control" placeholder="e.g. Gurgaon Hub">
+                <div class="col-md-6" title="Procurement / Purchase location where vehicle was purchased">
+                  <label class="form-label">Purchase Location <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="text" id="createPurchaseLocation" class="form-control" placeholder="e.g. Delhi Procurement Center">
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">Purchase Price (₹)</label>
-                  <input type="number" id="createPurchasePrice" class="form-control" placeholder="e.g. 125000">
+                <div class="col-md-3" title="Direct purchase cost incurred by company to acquire asset">
+                  <label class="form-label">Purchase Price (₹) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createPurchasePrice" class="form-control" value="70000" placeholder="70000">
+                </div>
+                <div class="col-md-3" title="Total investment required by investor to acquire asset slot">
+                  <label class="form-label">Investment Amount (₹) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createInvestmentAmount" class="form-control" placeholder="e.g. 50000">
+                </div>
+                <div class="col-md-3" title="Expected return/payout amount to investor on this vehicle asset">
+                  <label class="form-label">Investor Return Rate (₹) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createVendorRentalCost" class="form-control" placeholder="e.g. 2500">
+                </div>
+                <div class="col-md-3" title="Rental tariff charged to driver/user operating the vehicle">
+                  <label class="form-label">Driver Rental Rate (₹) <i class="bi bi-info-circle text-muted"></i></label>
+                  <input type="number" min="0" id="createOutboundRentalRate" class="form-control" placeholder="e.g. 4000">
                 </div>
               </div>
 
-              <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                <button type="reset" class="btn btn-outline-secondary px-4">Clear</button>
-                <button type="submit" id="submitBtn" class="btn btn-dark px-5 fw-semibold" disabled>
+              <div class="d-flex justify-content-end gap-2 pt-4 border-top mt-4">
+                <button type="reset" class="btn btn-outline-secondary px-4 py-2 rounded-2">Clear Form</button>
+                <button type="submit" id="submitBtn" class="btn btn-dark px-5 py-2 fw-semibold rounded-2 shadow-sm" disabled>
                   Register Asset
                 </button>
               </div>
@@ -119,16 +228,21 @@
             </form>
           </div>
         </div>
-
       </div>
     </main>
   </div>
 
-  <!-- Smart Form Validation Script -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("createVehicleForm");
       const submitBtn = document.getElementById("submitBtn");
+      
+      const yearInput = document.getElementById("createVehicleYearModel");
+      if (yearInput) {
+        const currentYear = new Date().getFullYear();
+        yearInput.max = currentYear;
+        yearInput.value = currentYear;
+      }
 
       function checkFormValidity() {
         if (form.checkValidity()) {
@@ -137,25 +251,23 @@
           submitBtn.setAttribute("disabled", "true");
         }
       }
-
       form.addEventListener("input", checkFormValidity);
       form.addEventListener("change", checkFormValidity);
       checkFormValidity();
     });
   </script>
-
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../js/config-manager.js"></script>
   <script src="../js/api.js"></script>
-  <script src="../js/evFleetApiClient.js"></script>[cite: 5]
+  <script src="../js/evFleetApiClient.js"></script>
   <script src="../js/js2/ev-fleet-actions.js"></script>
   <script>
     fetch('../components/sidebar.html')
       .then(res => res.text())
       .then(html => {
         document.getElementById('sidebar-container').innerHTML = html;
-        document.querySelector('[data-page="ev-fleet"]')?.classList.add('active');
+        // Correct active link for Register New EV page
+        document.querySelector('[data-page="create-ev"]')?.classList.add('active');
       });
   </script>
 </body>

@@ -1,7 +1,6 @@
 /**
- * EV Fleet Management - Frontend API Client (Pure Vanilla JavaScript for Browser)
- * - Encryption logic untouched & working properly.
- * - All Backend A-to-Z APIs and Pagination/Filters fully synchronized.
+ * EV Fleet Management - Frontend API Client
+ * Synchronized with all backend search parameters, investment, rental pricing filters, and cluster association cases.
  */
 
 const getEnvConfig = () => {
@@ -9,59 +8,47 @@ const getEnvConfig = () => {
     (typeof window !== 'undefined' && window.ENV && window.ENV.API_BASE_URL) ||
     'http://localhost:5003/api/vehicles';
 
+  const clusterApiBase = 
+    (typeof window !== 'undefined' && window.ENV && window.ENV.CLUSTER_API_BASE_URL) ||
+    'http://localhost:5003/api/evFleet-Cluster-Association';
+
   const encryptionKey = "a8f3c9e2b4d1f6a8c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6";
 
-  return { baseUrl, encryptionKey };
+  return { baseUrl, clusterApiBase, encryptionKey };
 };
 
-/**
- * Payload को एनक्रिप्ट करके Base64 स्ट्रिंग बनाना (एन्क्रिप्शन लॉजिक यथावत है)
- */
 const encryptToken = (data) => {
   try {
     const { encryptionKey } = getEnvConfig();
-    const jsonString = JSON.stringify({
-      data: data,
-      timestamp: Date.now()
-    });
-
+    const jsonString = JSON.stringify({ data: data, timestamp: Date.now() });
     let encrypted = '';
     for (let i = 0; i < jsonString.length; i++) {
-      const charCode = 
-        jsonString.charCodeAt(i) ^ 
-        encryptionKey.charCodeAt(i % encryptionKey.length);
+      const charCode = jsonString.charCodeAt(i) ^ encryptionKey.charCodeAt(i % encryptionKey.length);
       encrypted += String.fromCharCode(charCode);
     }
     return btoa(encrypted);
   } catch (error) {
-    console.error('Frontend Encryption Error:', error);
+    console.error('Encryption Error:', error);
     return '';
   }
 };
 
-/**
- * Standard HTTP Fetch Wrapper with Encryption Headers
- */
-const apiRequest = async (endpoint = '', options = {}) => {
+const apiRequest = async (endpoint = '', options = {}, customBaseUrl = null) => {
   const { baseUrl } = getEnvConfig();
-  const url = `${baseUrl}${endpoint}`;
+  const targetBase = customBaseUrl || baseUrl;
+  const url = `${targetBase}${endpoint}`;
 
-  // Security Header Payload Generation
-  const encryptedHeaderToken = encryptToken({
-    client: 'EV_Fleet_Frontend',
-    status: 'authorized'
-  });
+  const encryptedHeaderToken = encryptToken({ client: 'EV_Fleet_Frontend', status: 'authorized' });
 
   const headers = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Accept-Encoding': 'gzip, deflate',
     'x-api-encrypted-key': encryptedHeaderToken,
     ...(options.headers || {})
   };
 
-  const config = {
-    ...options,
-    headers
-  };
+  const config = { ...options, headers };
 
   try {
     const response = await fetch(url, config);
@@ -78,13 +65,8 @@ const apiRequest = async (endpoint = '', options = {}) => {
   }
 };
 
-// ==========================================
-// EV FLEET API SERVICES (Exported to window for UI JS Files)
-// ==========================================
-
 window.EVFleetService = {
   
-  // 1. CREATE NEW VEHICLE (POST /)
   createVehicle: async (vehicleData) => {
     return await apiRequest('/', {
       method: 'POST',
@@ -92,20 +74,20 @@ window.EVFleetService = {
     });
   },
 
-  // 2. ADVANCED SEARCH & LIST VEHICLES WITH PAGINATION & FILTERS (GET /)
   searchVehicles: async (queryParams = {}) => {
     const cleanParams = {};
     
-    // Pagination Defaults
     cleanParams.page = queryParams.page || 1;
-    cleanParams.limit = queryParams.limit || 10;
+    cleanParams.limit = Math.min(30, Math.max(1, parseInt(queryParams.limit, 10) || 10));
 
-    // Backend पर समर्थित सभी फिल्टर्स और क्वेरी पैरामीटर्स की लिस्ट
     const allowedFilters = [
       'vehicleId', 'vehicleType', 'vehicleNoPlate', 'companyName', 
       'sellerName', 'purchaseLocation', 'acquisitionType', 'status', 
       'vehicleModelName', 'vehicleYearModel', 'vehicleMotorPowerKw', 
-      'batteryCapacityKwh', 'rangeKm', 'topSpeedKmph', 'search'
+      'batteryCapacityKwh', 'rangeKm', 'topSpeedKmph', 'search',
+      'investmentAmount', 'minInvestment', 'maxInvestment',
+      'investorReturnRate', 'mininvestorReturnRate', 'maxinvestorReturnRate',
+      'outboundRentalRate', 'minOutboundRentalRate', 'maxOutboundRentalRate'
     ];
 
     allowedFilters.forEach((key) => {
@@ -116,21 +98,40 @@ window.EVFleetService = {
     });
 
     const searchParams = new URLSearchParams(cleanParams).toString();
-    const endpoint = `/?${searchParams}`;
-
-    return await apiRequest(endpoint, {
-      method: 'GET'
-    });
+    return await apiRequest(`/?${searchParams}`, { method: 'GET' });
   },
 
-  // 3. GET SINGLE VEHICLE BY ID (GET /:id)
+  // Cluster Association & Cases API (Enforces max 30 vehicles per batch/page)
+getEvsByCases: async (queryParams = {}) => {
+    const { clusterApiBase } = getEnvConfig();
+
+    const safeLimit = Math.min(50, Math.max(1, parseInt(queryParams.limit, 10) || 30));
+    const safePage = Math.max(1, parseInt(queryParams.page, 10) || 1);
+
+    const cleanParams = {
+      page: safePage,
+      limit: safeLimit
+    };
+
+    if (queryParams.type) cleanParams.type = queryParams.type.trim();
+    
+    // Agar type 'cluster' hai toh clusterId bhejna zaroori hai
+    if (queryParams.clusterId) {
+      cleanParams.clusterId = queryParams.clusterId.trim();
+    }
+
+    if (queryParams.status) {
+      cleanParams.status = queryParams.status.trim();
+    }
+
+    const searchParams = new URLSearchParams(cleanParams).toString();
+    return await apiRequest(`/evs/filter-cases?${searchParams}`, { method: 'GET' }, clusterApiBase);
+  },
+
   getVehicleById: async (vehicleId) => {
-    return await apiRequest(`/${vehicleId}`, {
-      method: 'GET'
-    });
+    return await apiRequest(`/${vehicleId}`, { method: 'GET' });
   },
 
-  // 4. FULL / PARTIAL UPDATE VEHICLE - PUT or PATCH (PUT/PATCH /:id)
   updateVehicle: async (vehicleId, updateData, method = 'PUT') => {
     return await apiRequest(`/${vehicleId}`, {
       method: method.toUpperCase(),
@@ -138,25 +139,14 @@ window.EVFleetService = {
     });
   },
 
-  // 5. DELETE ENTIRE VEHICLE RECORD (DELETE /:id)
   deleteVehicle: async (vehicleId) => {
-    return await apiRequest(`/${vehicleId}`, {
-      method: 'DELETE'
-    });
+    return await apiRequest(`/${vehicleId}`, { method: 'DELETE' });
   },
 
-  // ==========================================
-  // IMAGE MANAGEMENT APIS
-  // ==========================================
-
-  // Get all images for a vehicle (GET /:id/images)
   getVehicleImages: async (vehicleId) => {
-    return await apiRequest(`/${vehicleId}/images`, {
-      method: 'GET'
-    });
+    return await apiRequest(`/${vehicleId}/images`, { method: 'GET' });
   },
 
-  // Add or Update Image in vehicleImage Array - POST or PUT (POST/PUT /:id/images)
   addOrUpdateVehicleImage: async (vehicleId, imageData, method = 'POST') => {
     return await apiRequest(`/${vehicleId}/images`, {
       method: method.toUpperCase(),
@@ -164,18 +154,10 @@ window.EVFleetService = {
     });
   },
 
-  // Delete specific image by imageId (DELETE /:id/images/:imageId)
   deleteVehicleImage: async (vehicleId, imageId) => {
-    return await apiRequest(`/${vehicleId}/images/${imageId}`, {
-      method: 'DELETE'
-    });
+    return await apiRequest(`/${vehicleId}/images/${imageId}`, { method: 'DELETE' });
   },
 
-  // ==========================================
-  // FIELD-SPECIFIC MODIFIERS (PATCH APIs)
-  // ==========================================
-
-  // Update Model Name specifically (PATCH /:id/model-name)
   updateModelName: async (vehicleId, vehicleModelName) => {
     return await apiRequest(`/${vehicleId}/model-name`, {
       method: 'PATCH',
@@ -183,7 +165,6 @@ window.EVFleetService = {
     });
   },
 
-  // Update Year Model specifically (PATCH /:id/year-model)
   updateYearModel: async (vehicleId, vehicleYearModel) => {
     return await apiRequest(`/${vehicleId}/year-model`, {
       method: 'PATCH',
@@ -191,7 +172,6 @@ window.EVFleetService = {
     });
   },
 
-  // Update Vehicle Status specifically (PATCH /:id/status)
   updateStatus: async (vehicleId, status) => {
     return await apiRequest(`/${vehicleId}/status`, {
       method: 'PATCH',

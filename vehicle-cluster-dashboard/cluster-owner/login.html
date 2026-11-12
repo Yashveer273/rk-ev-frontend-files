@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cluster Owner Portal - Login</title>
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../css/app.css" />
+  <style>
+    body {
+      background-color: #0f172a;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .login-card {
+      background: #ffffff;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .form-control {
+      padding: 12px 14px;
+      font-size: 14px;
+      border-color: #cbd5e1;
+    }
+    .form-control:focus {
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+    }
+    .btn-primary {
+      padding: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+  </style>
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100">
+
+  <div class="container" style="max-width: 420px;">
+    <div class="text-center mb-4">
+      <h2 class="text-white fw-bold tracking-tight">Vehicle Cluster Portal</h2>
+      <p class="text-slate-400 text-muted small">Enter your operational credentials to continue</p>
+    </div>
+
+    <div class="card login-card p-4 p-md-5">
+      <div class="mb-4">
+        <h4 class="fw-bold text-dark mb-1">Cluster Owner Login</h4>
+        <p class="text-muted small">Secure access to your management dashboard</p>
+      </div>
+
+      <form id="ownerLoginForm">
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 11px;">Cluster ID / Owner ID</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-lock text-muted"></i></span>
+            <input type="text" id="loginClusterId" class="form-control border-start-0" placeholder="e.g. VCO-1234" required />
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 11px;">Email ID (Optional)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+            <input type="email" id="loginEmail" class="form-control border-start-0" placeholder="owner@example.com" />
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 11px;">Access Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+            <input type="password" id="loginPassword" class="form-control border-start-0" placeholder="••••••••••••" required />
+          </div>
+        </div>
+
+        <div id="loginErrorMessage" class="mb-3"></div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" id="submitOwnerLoginBtn" class="btn btn-primary shadow-sm">
+            Sign In to Dashboard
+          </button>
+          <a href="../index.html" class="btn btn-link text-muted text-decoration-none small mt-2">
+            <i class="bi bi-arrow-left"></i> Back to Role Selection
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <div class="text-center mt-4 text-muted" style="font-size: 12px;">
+      &copy; 2026 Vehicle Cluster Architecture. All rights reserved.
+    </div>
+  </div>
+
+  <!-- Config & Core JS Scripts -->
+  <script src="../js/config-manager.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/cluster-queries-api.js"></script>
+  <script src="../js/cluster-owner-api.js"></script>
+
+  <script>
+    // Login Function Call Implementation
+    const ownerLoginForm = document.getElementById("ownerLoginForm");
+    const loginErrorMessage = document.getElementById("loginErrorMessage");
+
+    ownerLoginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginErrorMessage.innerHTML = "";
+
+      const clusterId = document.getElementById("loginClusterId").value.trim();
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      const submitBtn = document.getElementById("submitOwnerLoginBtn");
+
+      if (!clusterId || !password) {
+        loginErrorMessage.innerHTML = `<div class="alert alert-danger py-2 small mb-0">Cluster ID and Password are required.</div>`;
+        return;
+      }
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> Authenticating...`;
+
+        // POST /api/clusters/verify-login API request function call
+        const response = await ClusterAPI.request("POST", "/verify-login", {
+          clusterId: clusterId,
+          email: email || undefined,
+          password: password
+        });
+
+        if (response && (response.success || response.data)) {
+          const ownerData = response.data || response;
+          const activeOwnerId = ownerData.ownerId || ownerData.clusterId || clusterId;
+
+          // Save active owner ID session in localStorage & Config Manager
+          localStorage.setItem("currentClusterOwnerId", activeOwnerId);
+          if (window.APP_CONFIG) {
+            window.APP_CONFIG.VEHICLE_CLUSTER_OWNER_ID = activeOwnerId;
+            window.APP_CONFIG.USER_ROLE = "cluster-owner";
+          }
+          ClusterConfig.saveConfig({ USER_ROLE: "cluster-owner", currentClusterOwnerId: activeOwnerId });
+
+          loginErrorMessage.innerHTML = `<div class="alert alert-success py-2 small mb-0">Authentication successful. Redirecting...</div>`;
+
+          setTimeout(() => {
+            window.location.href = "kyc-submission.html";
+          }, 600);
+        } else {
+          throw new Error(response.message || "Invalid credentials provided.");
+        }
+
+      } catch (error) {
+        loginErrorMessage.innerHTML = `<div class="alert alert-danger py-2 small mb-0">${error.message || "Authentication failed. Please check your credentials."}</div>`;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `Sign In to Dashboard`;
+      }
+    });
+  </script>
+</body>
+</html>

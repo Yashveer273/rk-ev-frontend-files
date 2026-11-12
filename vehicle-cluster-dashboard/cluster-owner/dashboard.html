@@ -89,11 +89,7 @@
   <script src="../js/api.js"></script>
   <script src="../js/cluster-owner-api.js"></script>
   <script src="../js/js2/owner-actions.js"></script>
-  <script>
-    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
-      document.getElementById('sidebar-container').innerHTML = html;
-      document.querySelector('[data-page="owner-dashboard"]')?.classList.add('active');
-    });
-  </script>
+
+  <script src="../js/js2/owner-auth-guard.js"></script>
 </body>
 </html>

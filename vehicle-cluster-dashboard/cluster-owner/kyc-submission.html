@@ -3,40 +3,121 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Submit KYC - Cluster Owner</title>
+  <title>KYC Verification - Cluster Owner Portal</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="../css/app.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <style>
+    .kyc-container-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      max-width: 650px;
+    }
+    .status-display-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 650px;
+    }
+    .form-control:focus {
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard-layout">
     <div id="sidebar-container"></div>
 
     <main class="main-content">
-      <header class="topbar">
-        <h1 class="page-title">Submit KYC</h1>
+      <header class="topbar px-4 py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="page-title fs-4 m-0">KYC Verification</h1>
+          <p class="text-muted small m-0">View your KYC submission status or submit credentials</p>
+        </div>
         <div class="role-badge">Cluster Owner</div>
       </header>
 
-      <div class="content-body">
-        <div class="operation-card" style="max-width: 550px;">
-          <h5><i class="bi bi-file-earmark-check-fill text-primary"></i> Identity Document Verification</h5>
-          <div class="operation-description">Submit identity details for Super Admin review. Status will update to 'Pending'.</div>
+      <div class="content-body p-4">
+        
+        <!-- Loading State -->
+        <div id="kycLoader" class="text-center py-5" style="max-width: 650px;">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted small mt-2">Checking KYC status from server...</p>
+        </div>
 
-          <form id="kycForm">
+        <!-- ================= 1. VISIBILITY UI (Shown if KYC Data Exists) ================= -->
+        <div id="kycVisibilityUI" class="status-display-card shadow-sm mb-4" style="display: none;">
+          <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+            <h5 class="fw-bold text-dark m-0"><i class="bi bi-shield-check text-primary me-2"></i>KYC Status Details</h5>
+            <span id="visStatusBadge" class="badge px-3 py-2 fs-6">Pending</span>
+          </div>
+
+          <div class="row g-3 small">
+            <div class="col-6">
+              <span class="text-muted d-block text-uppercase" style="font-size: 11px; font-weight: 700;">KYC ID</span>
+              <strong id="visKycId" class="text-dark font-monospace fs-6">-</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted d-block text-uppercase" style="font-size: 11px; font-weight: 700;">Submission Date</span>
+              <strong id="visDate" class="text-dark">-</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted d-block text-uppercase" style="font-size: 11px; font-weight: 700;">PAN Number</span>
+              <strong id="visPan" class="text-dark">-</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted d-block text-uppercase" style="font-size: 11px; font-weight: 700;">Document Link</span>
+              <a href="#" id="visDocLink" target="_blank" class="text-decoration-underline fw-bold">View Document</a>
+            </div>
+            <div class="col-12" id="visRejectionBox" style="display: none;">
+              <div class="alert alert-danger mt-2 mb-0 py-2">
+                <strong>Rejection Reason:</strong> <span id="visReasonText">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= 2. SUBMISSION UI / FORM (Shown if Data is Empty or Rejected) ================= -->
+        <div class="kyc-container-card p-4 p-md-5" id="kycFormWrapper" style="display: none;">
+          <div class="mb-4">
+            <h5 class="fw-bold text-dark mb-1"><i class="bi bi-person-vcard text-primary me-2"></i><span id="formHeadingText">KYC Document Submission</span></h5>
+            <p class="text-muted small" id="formDescText">Provide your PAN number and the image internet URL of your document for Super Admin review.</p>
+          </div>
+
+          <form id="kycForm" autocomplete="off">
             <div class="mb-3">
-              <label class="form-label">Government Identification Number</label>
-              <input type="text" name="aadhaar" class="form-control" placeholder="Enter government identity number" required />
+              <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 11px;">PAN Number</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-card-heading text-muted"></i></span>
+                <input type="text" name="pan" id="panInput" class="form-control border-start-0" placeholder="Enter PAN number" autocomplete="off" required />
+              </div>
             </div>
 
-            <div id="kycMessage" class="status-box"></div>
+            <div class="mb-4">
+              <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 11px;">Document Photo / Image URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-link-45deg text-muted"></i></span>
+                <input type="url" name="documentUrl" id="documentUrlInput" class="form-control border-start-0" placeholder="https://example.com/document-photo.jpg" autocomplete="off" required />
+              </div>
+              <div class="form-text text-muted small mt-1">Enter a secure internet image link of your verification document.</div>
+            </div>
 
-            <button type="submit" class="btn btn-primary mt-2">
-              <i class="bi bi-send"></i> Submit Verification
-            </button>
+            <div id="kycMessage" class="mb-3"></div>
+
+            <div class="d-grid">
+              <button type="submit" id="submitKycBtn" class="btn btn-primary py-2 fw-bold">
+                <i class="bi bi-shield-check me-1"></i> <span id="submitBtnText">Submit KYC Details</span>
+              </button>
+            </div>
           </form>
         </div>
+
       </div>
     </main>
   </div>
@@ -45,10 +126,108 @@
   <script src="../js/api.js"></script>
   <script src="../js/cluster-owner-api.js"></script>
   <script src="../js/js2/owner-actions.js"></script>
+  <script src="../js/js2/owner-auth-guard.js"></script>
+
   <script>
-    fetch('../components/sidebar.html').then(res => res.text()).then(html => {
-      document.getElementById('sidebar-container').innerHTML = html;
-      document.querySelector('[data-page="kyc-submission"]')?.classList.add('active');
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const sidebarRes = await fetch('../components/sidebar.html');
+        const sidebarHtml = await sidebarRes.text();
+        const container = document.getElementById('sidebar-container');
+        if (container) {
+          container.innerHTML = sidebarHtml;
+          document.querySelector('[data-page="kyc-submission"]')?.classList.add('active');
+        }
+      } catch (err) {
+        console.error("Failed to load sidebar:", err);
+      }
+
+      const loader = document.getElementById("kycLoader");
+      const visibilityUI = document.getElementById("kycVisibilityUI");
+      const formWrapper = document.getElementById("kycFormWrapper");
+
+      const ownerId = localStorage.getItem("currentClusterOwnerId");
+      if (!ownerId) {
+        if (loader) loader.style.display = "none";
+        alert("Session expired. Please login again.");
+        window.location.href = "../index.html";
+        return;
+      }
+
+      try {
+        // STEP 1: GET API call to fetch KYC status & details based on owner/cluster ID
+        const response = await window.ClusterOwnerAPI.getKycStatus();
+        console.log("KYC Status API Response:", response);
+
+        // API response structure ke mutabiq data extract karna
+        const kycData = response?.data?.kyc || response?.kyc;
+
+        if (loader) loader.style.display = "none";
+
+        // STEP 2: Check if KYC data exists and PAN is not empty
+        const hasData = kycData && kycData.pan && kycData.pan.trim() !== "";
+
+        if (!hasData) {
+          // Case A: Data is empty -> Show Submission Form UI
+          if (formWrapper) formWrapper.style.display = "block";
+          if (visibilityUI) visibilityUI.style.display = "none";
+        } else {
+          // Case B: Data exists -> Show Visibility UI
+          if (visibilityUI) visibilityUI.style.display = "block";
+
+          const status = kycData.kycStatus || "Pending";
+          document.getElementById("visKycId").textContent = kycData.kycId || "N/A";
+          
+          // FIX: Correct ID mapping for PAN
+          document.getElementById("visPan").textContent = kycData.pan || "N/A";
+          
+          const badge = document.getElementById("visStatusBadge");
+          badge.textContent = status;
+          badge.className = "badge px-3 py-2 fs-6 ";
+          if (status === "Verified") badge.classList.add("bg-success");
+          else if (status === "Rejected") badge.classList.add("bg-danger");
+          else badge.classList.add("bg-warning", "text-dark");
+
+          // Submission Date formatting fix
+          if (kycData.submittedAt) {
+            const dateObj = new Date(kycData.submittedAt);
+            if (!isNaN(dateObj.getTime())) {
+              document.getElementById("visDate").textContent = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else {
+              document.getElementById("visDate").textContent = kycData.submittedAt;
+            }
+          } else {
+            document.getElementById("visDate").textContent = "N/A";
+          }
+
+          const docLink = document.getElementById("visDocLink");
+          if (docLink && kycData.documentUrl) {
+            docLink.href = kycData.documentUrl;
+          }
+
+          if (status === "Verified") {
+            if (formWrapper) formWrapper.style.display = "none";
+          } else if (status === "Pending") {
+            if (formWrapper) formWrapper.style.display = "none";
+          } else if (status === "Rejected") {
+            const rejectionBox = document.getElementById("visRejectionBox");
+            if (rejectionBox) rejectionBox.style.display = "block";
+            document.getElementById("visReasonText").textContent = kycData.rejectionReason || "Documents did not meet criteria.";
+
+            if (formWrapper) {
+              formWrapper.style.display = "block";
+              document.getElementById("formHeadingText").innerText = "Re-submit KYC Documents";
+              document.getElementById("panInput").value = kycData.pan || "";
+              document.getElementById("documentUrlInput").value = kycData.documentUrl || "";
+              document.getElementById("submitBtnText").innerText = "Re-submit KYC Details";
+            }
+          }
+        }
+      } catch (error) {
+        if (loader) loader.style.display = "none";
+        if (formWrapper) formWrapper.style.display = "block";
+        console.error("Error fetching KYC status:", error);
+      }
     });
   </script>
 </body>

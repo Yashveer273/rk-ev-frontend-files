@@ -4,36 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vehicle Cluster Portal - Welcome</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Bootstrap Icons CDN -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/app.css" />
+  <style>
+    body {
+      background-color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .welcome-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+  </style>
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
+<body class="d-flex align-items-center justify-content-center min-vh-100">
 
-  <div class="card shadow-sm p-4 text-center" style="max-width: 450px; width: 100%; border-radius: 12px;">
-    <h3 class="fw-bold mb-2">Vehicle Cluster Portal</h3>
-    <p class="text-muted small mb-4">Select your role to access the management dashboard.</p>
-
-    <div class="d-grid gap-3">
-      <a href="super-admin/dashboard.html" class="btn btn-dark py-3 fw-bold">
-        👑 Login as Super Admin
-      </a>
-      <a href="cluster-owner/dashboard.html" class="btn btn-outline-primary py-3 fw-bold">
-        👤 Login as Cluster Owner
-      </a>
+  <div class="container" style="max-width: 440px;">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-dark">Vehicle Cluster Platform</h2>
+      <p class="text-muted small">Select your portal to access enterprise management tools</p>
     </div>
 
-    <div class="mt-4 text-muted" style="font-size: 11px;">
-      Powered by Modular Vehicle Cluster Architecture
+    <div class="card welcome-card p-4 p-md-5">
+      <div class="d-grid gap-3">
+        <a href="super-admin/dashboard.html" class="btn btn-dark py-3 fw-bold d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-shield-fill-check fs-5"></i> Super Admin Portal
+        </a>
+        <a href="cluster-owner/login.html" class="btn btn-outline-primary py-3 fw-bold d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-building fs-5"></i> Cluster Owner Portal
+        </a>
+      </div>
+    </div>
+
+    <div class="text-center mt-4 text-muted" style="font-size: 11px;">
+      Enterprise Transport & EV Fleet Management System
     </div>
   </div>
 
-  <!-- Config & Core JS -->
   <script src="js/config-manager.js"></script>
   <script>
-    // Default initial config check
     const currentConfig = ClusterConfig.getConfig();
     if (!currentConfig.USER_ROLE) {
       ClusterConfig.saveConfig({ USER_ROLE: "super-admin" });
