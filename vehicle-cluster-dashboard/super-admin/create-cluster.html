@@ -52,14 +52,14 @@
                 <label class="form-label">Cluster Owner Name</label>
                 <input type="text" name="vehicleClusterOwnerName" class="form-control" placeholder="Enter owner name" required />
               </div>
-             <div class="col-md-6">
-  <label class="form-label">Owner Email</label>
-  <input type="email" name="email" class="form-control" placeholder="owner@example.com" required />
-</div>
-<div class="col-md-6">
-  <label class="form-label">Access Password (For Owner Login)</label>
-  <input type="password" name="password" class="form-control" placeholder="Enter owner access password" required />
-</div>
+              <div class="col-md-6">
+                <label class="form-label">Owner Email</label>
+                <input type="email" name="email" class="form-control" placeholder="owner@example.com" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Access Password (For Owner Login)</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter owner access password" required />
+              </div>
               <div class="col-md-6">
                 <label class="form-label">PAN Number</label>
                 <input type="text" name="pan" class="form-control" placeholder="ABCDE1234F" />
@@ -154,10 +154,10 @@
     });
 
     // ==========================================================
-    // LEAFLET INTERACTIVE MAP PICKER LOGIC
+    // LEAFLET INTERACTIVE MAP PICKER & FORM SUBMISSION LOGIC
     // ==========================================================
     document.addEventListener("DOMContentLoaded", function() {
-      // Default Initial Location (India Center / Aligarh)
+      // Default Initial Location (Aligarh)
       const defaultLat = 27.8974;
       const defaultLng = 78.0880;
 
@@ -170,13 +170,18 @@
         attribution: 'Tiles &copy; Esri'
       });
 
-      // 1. Initialize Leaflet Map (Scroll Zoom Disabled by Default)
+      // 1. Initialize Leaflet Map
       const map = L.map('pickerMap', {
         center: [defaultLat, defaultLng],
         zoom: 12,
-        scrollWheelZoom: false, // Prevents page scrolling stuck issue
+        scrollWheelZoom: false,
         layers: [streetTile]
       });
+
+      // Force Leaflet to calculate size correctly on load
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 200);
 
       // 2. Add Draggable Marker
       const marker = L.marker([defaultLat, defaultLng], {
@@ -198,7 +203,7 @@
         updateInputs(position.lat, position.lng);
       });
 
-      // 4. Map Click Event (Move marker to clicked position)
+      // 4. Map Click Event
       map.on('click', function(e) {
         marker.setLatLng(e.latlng);
         updateInputs(e.latlng.lat, e.latlng.lng);
@@ -239,6 +244,75 @@
           layerToggleBtn.innerHTML = `<i class="bi bi-layers-fill text-primary"></i> Satellite View`;
         }
       });
+
+      // ==========================================================
+      // FORM SUBMISSION HANDLER
+      // ==========================================================
+      const form = document.getElementById("createClusterForm");
+      const messageBox = document.getElementById("createClusterMessage");
+
+      if (form) {
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          messageBox.innerHTML = `<div class="alert alert-info py-2">Creating vehicle cluster...</div>`;
+
+          const formData = new FormData(form);
+
+          // Auto-generate a unique vehicleClusterOwnerId
+          const ownerId = "OWNER-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+          // Build structured payload matching Mongoose schema
+          const payload = {
+            vehicleClusterOwnerId: ownerId,
+            vehicleClusterOwnerName: formData.get("vehicleClusterOwnerName"),
+            vehicleCapacity: Number(formData.get("vehicleCapacity")),
+            
+            vehicleClusterLocation: {
+              lat: Number(formData.get("lat")),
+              long: Number(formData.get("long")),
+              zipCode: formData.get("zipCode"),
+              state: formData.get("state"),
+              city: formData.get("city"),
+              streetAddress: formData.get("streetAddress")
+            },
+
+            vehicleClusterDetails: {
+              ownerName: formData.get("vehicleClusterOwnerName"),
+              email: formData.get("email"),
+              password: formData.get("password"),
+              pan: formData.get("pan"),
+              image: formData.get("image") || "",
+              status: "Pending"
+            },
+
+            kyc: {
+              pan: formData.get("pan"),
+              documentUrl: formData.get("image") || "https://example.com/default-kyc.jpg",
+              kycStatus: "Pending"
+            }
+          };
+
+          try {
+            // Call SuperAdminAPI[cite: 2]
+            const result = await window.SuperAdminAPI.createCluster(payload);
+
+            messageBox.innerHTML = `
+              <div class="alert alert-success py-2">
+                <i class="bi bi-check-circle-fill"></i> Cluster created successfully! Owner ID: <strong>${ownerId}</strong>
+              </div>`;
+
+            form.reset();
+
+        
+          } catch (error) {
+            console.error("Cluster creation error:", error);
+            messageBox.innerHTML = `
+              <div class="alert alert-danger py-2">
+                <i class="bi bi-exclamation-triangle-fill"></i> ${error.message || "Failed to create vehicle cluster."}
+              </div>`;
+          }
+        });
+      }
     });
   </script>
 </body>

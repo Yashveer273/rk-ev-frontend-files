@@ -1,20 +1,17 @@
 /**
  * EV Fleet Management - Frontend API Client
- * Synchronized with all backend search parameters, investment, rental pricing filters, and cluster association cases.
+ * Uses centralized BASE_URLS and Super Admin headers from api.js
  */
 
 const getEnvConfig = () => {
-  const baseUrl = 
-    (typeof window !== 'undefined' && window.ENV && window.ENV.API_BASE_URL) ||
-    'http://localhost:5003/api/vehicles';
-
-  const clusterApiBase = 
-    (typeof window !== 'undefined' && window.ENV && window.ENV.CLUSTER_API_BASE_URL) ||
-    'http://localhost:5003/api/evFleet-Cluster-Association';
-
+  const apiConfig = (typeof window !== 'undefined' && window.ClusterAPI) || {};
+  
+  const baseUrl = apiConfig.BASE_URLS?.VEHICLES || 'http://localhost:5003/api/vehicles';
+  const clusterApiBase = apiConfig.BASE_URLS?.CLUSTERS || 'http://localhost:5000/api/clusters';
+  const associationApiBase = apiConfig.BASE_URLS?.CLUSTER_ASSOCIATION || 'http://localhost:5003/api/evFleet-Cluster-Association';
   const encryptionKey = "a8f3c9e2b4d1f6a8c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6";
 
-  return { baseUrl, clusterApiBase, encryptionKey };
+  return { baseUrl, clusterApiBase, associationApiBase, encryptionKey };
 };
 
 const encryptToken = (data) => {
@@ -39,12 +36,16 @@ const apiRequest = async (endpoint = '', options = {}, customBaseUrl = null) => 
   const url = `${targetBase}${endpoint}`;
 
   const encryptedHeaderToken = encryptToken({ client: 'EV_Fleet_Frontend', status: 'authorized' });
+  const baseHeaders = window.ClusterAPI?.getSuperAdminHeaders
+    ? window.ClusterAPI.getSuperAdminHeaders()
+    : { "x-user-role": "super-admin" };
 
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Accept-Encoding': 'gzip, deflate',
     'x-api-encrypted-key': encryptedHeaderToken,
+    ...baseHeaders,
     ...(options.headers || {})
   };
 
@@ -101,9 +102,9 @@ window.EVFleetService = {
     return await apiRequest(`/?${searchParams}`, { method: 'GET' });
   },
 
-  // Cluster Association & Cases API (Enforces max 30 vehicles per batch/page)
-getEvsByCases: async (queryParams = {}) => {
-    const { clusterApiBase } = getEnvConfig();
+// Cluster Association & Cases API (Enforces max 30 vehicles per batch/page)
+  getEvsByCases: async (queryParams = {}) => {
+    const { associationApiBase } = getEnvConfig();
 
     const safeLimit = Math.min(50, Math.max(1, parseInt(queryParams.limit, 10) || 30));
     const safePage = Math.max(1, parseInt(queryParams.page, 10) || 1);
@@ -114,19 +115,62 @@ getEvsByCases: async (queryParams = {}) => {
     };
 
     if (queryParams.type) cleanParams.type = queryParams.type.trim();
-    
-    // Agar type 'cluster' hai toh clusterId bhejna zaroori hai
-    if (queryParams.clusterId) {
-      cleanParams.clusterId = queryParams.clusterId.trim();
-    }
-
-    if (queryParams.status) {
-      cleanParams.status = queryParams.status.trim();
-    }
+    if (queryParams.clusterId) cleanParams.clusterId = queryParams.clusterId.trim();
+    if (queryParams.status) cleanParams.status = queryParams.status.trim();
 
     const searchParams = new URLSearchParams(cleanParams).toString();
-    return await apiRequest(`/evs/filter-cases?${searchParams}`, { method: 'GET' }, clusterApiBase);
+    return await apiRequest(`/evs/filter-cases?${searchParams}`, { method: 'GET' }, associationApiBase);
   },
+
+  // ==========================================
+  // CLUSTER VEHICLE MANAGEMENT APIS (GET, POST, PUT, DELETE)
+  // ==========================================
+
+  getClusterVehicles: async (clusterId, page = 1, limit = 30, search = '') => {
+    const { clusterApiBase } = getEnvConfig();
+    if (!clusterId) throw new Error("Cluster ID is required.");
+
+    const params = { page, limit };
+    if (search && search.trim() !== '') {
+      params.search = search.trim();
+    }
+
+    const queryParams = new URLSearchParams(params).toString();
+    return await apiRequest(`/${encodeURIComponent(clusterId)}/vehicles?${queryParams}`, { method: 'GET' }, clusterApiBase);
+  },
+
+  assignVehiclesBulk: async (clusterId, vehicleIds) => {
+    const { clusterApiBase } = getEnvConfig();
+    if (!clusterId || !Array.isArray(vehicleIds) || vehicleIds.length === 0) {
+      throw new Error("Cluster ID and vehicle IDs array are required.");
+    }
+    const vehiclesPayload = vehicleIds.map(id => ({ vehicleId: id }));
+    return await apiRequest(`/${encodeURIComponent(clusterId)}/vehicles/bulk-assign`, {
+      method: 'POST',
+      body: JSON.stringify({ vehicles: vehiclesPayload })
+    }, clusterApiBase);
+  },
+
+  updateAssignedVehicle: async (clusterId, vehicleId, updateData) => {
+    const { clusterApiBase } = getEnvConfig();
+    if (!clusterId || !vehicleId) throw new Error("Cluster ID and Vehicle ID are required.");
+    return await apiRequest(`/${encodeURIComponent(clusterId)}/vehicles/${encodeURIComponent(vehicleId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData)
+    }, clusterApiBase);
+  },
+
+  removeVehicleFromCluster: async (clusterId, vehicleId) => {
+    const { clusterApiBase } = getEnvConfig();
+    if (!clusterId || !vehicleId) throw new Error("Cluster ID and Vehicle ID are required.");
+    return await apiRequest(`/${encodeURIComponent(clusterId)}/vehicles/${encodeURIComponent(vehicleId)}`, {
+      method: 'DELETE'
+    }, clusterApiBase);
+  },
+
+  // ==========================================
+  // EXISTING VEHICLE MANAGEMENT METHODS
+  // ==========================================
 
   getVehicleById: async (vehicleId) => {
     return await apiRequest(`/${vehicleId}`, { method: 'GET' });
